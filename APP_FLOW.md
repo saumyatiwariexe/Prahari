@@ -1,4 +1,4 @@
-# CrowdGuard — App Flow Diagrams
+﻿# Prahari — App Flow Diagrams
 
 ---
 
@@ -94,7 +94,7 @@
               ┌────────────────────────────────┐
               │         TOP HEADER BAR          │
               │                                 │
-              │  [CG] CrowdGuard  |  Simulation │
+              │  [CG] Prahari  |  Simulation │
               │  [Dashboard] [Split Screen Demo] │
               │              STATUS ●  LIVE  ⏱  │
               │              [▶ Start Demo]      │
@@ -121,7 +121,7 @@
 │  │  ZONE CHART    │  │                    │  ┌───────────────────┐│
 │  │  ZoneChart.tsx │  │                    │  │   BOTTOM BAR      ││
 │  │  last 30 ticks │  │                    │  │  Human: 4m12s     ││
-│  └────────────────┘  │                    │  │  CrowdGuard: 2.3s ││
+│  └────────────────┘  │                    │  │  Prahari: 2.3s ││
 │                      │                    │  │  Crush: YES | NO  ││
 │  ┌─────────────────┐ │                    │  └───────────────────┘│
 │  │ CRITICAL ZONES  │ │                    └──────────────────────┘
@@ -239,7 +239,7 @@ t=0:00                              t=3:08    t=3:12  t=4:05  t=4:12  t=4:15
   ════════════════════ BOTTOM BAR COMPARISON ════════════════════════
 
   ┌─────────────────────────────────────────────────────────────────┐
-  │  Human Response Time:  4 min 12 sec  │  CrowdGuard:  2.3 sec   │
+  │  Human Response Time:  4 min 12 sec  │  Prahari:  2.3 sec   │
   │  Crush occurred:  YES ✗              │  Crush prevented:  YES ✓ │
   └─────────────────────────────────────────────────────────────────┘
 ```
@@ -252,7 +252,7 @@ t=0:00                              t=3:08    t=3:12  t=4:05  t=4:12  t=4:15
 Backend → Frontend  (every 100ms via /ws/live)
 ┌────────────────────────────────────────────────────────┐
 │  {                                                      │
-│    "crowdguard": {                                      │
+│    "prahari": {                                      │
 │      "zones": {                                         │
 │        "P3": { density, count, color, flow_vector }    │
 │        ...10 zones total                                │
@@ -297,6 +297,6 @@ app/page.tsx  (state: view, historyMap, clock, WebSocket data)
      └── [view="split"]
           └── SplitScreen.tsx
                ├── Left panel  — human timeline (interventions suppressed)
-               ├── Right panel — CrowdGuard timeline (full autonomy)
+               ├── Right panel — Prahari timeline (full autonomy)
                └── Bottom bar  — response time + outcome comparison
 ```

@@ -1,4 +1,4 @@
-# CrowdGuard
+﻿# Prahari
 **Predict crowd crush formation 90 seconds before it becomes lethal. Respond autonomously.**
 
 Built for FAR AWAY 2026 | Railways Theme
@@ -15,7 +15,7 @@ A crowd crush can form in **90 seconds**. The human decision chain takes **4+ mi
 
 ## The Solution
 
-CrowdGuard replaces human reaction time with **graded autonomous response**:
+Prahari replaces human reaction time with **graded autonomous response**:
 
 | Level | Trigger | Action | Latency |
 |---|---|---|---|
@@ -27,8 +27,8 @@ The system **predicts** dangerous formations 90 seconds ahead using crowd flow v
 
 ## Demo
 
-> Split-screen view: Human-operated station vs. CrowdGuard side-by-side on identical input.
-> Human response: 4 minutes 12 seconds. CrowdGuard: 2.3 seconds.
+> Split-screen view: Human-operated station vs. Prahari side-by-side on identical input.
+> Human response: 4 minutes 12 seconds. Prahari: 2.3 seconds.
 > On the left — crush occurs. On the right — averted.
 
 ---
@@ -85,7 +85,7 @@ Switch to **Split Screen Demo** view to see the autonomous vs. human comparison.
 ## Project Structure
 
 ```
-crowdguard/
+prahari/
 ├── backend/
 │   ├── main.py              # FastAPI + WebSocket server
 │   ├── constants.py         # All thresholds (single source of truth)
@@ -107,4 +107,4 @@ This is a proof-of-concept demonstration built for FAR AWAY Hackathon 2026. It i
 
 ---
 
-*CrowdGuard — Predict. Respond. Prevent.*
+*Prahari — Predict. Respond. Prevent.*

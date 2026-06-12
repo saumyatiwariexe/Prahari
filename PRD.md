@@ -1,4 +1,4 @@
-# CrowdGuard — Product Requirements Document
+﻿# Prahari — Product Requirements Document
 ## FAR AWAY Hackathon 2026 | Railways Theme
 
 **Version:** 1.2  
@@ -36,7 +36,7 @@ Added F7–F12: PA announcement banner, escalator direction animation, gate clos
 **One-line:** Predict dangerous crowd formations 90 seconds before they become lethal — and autonomously respond before a human can pick up the phone.
 
 **The core argument:**  
-Every major stampede of the last decade had the same failure: humans were too slow. Not uninformed — too slow. CrowdGuard removes human latency from first-response by deploying a graded autonomous intervention engine directly on top of existing camera infrastructure.
+Every major stampede of the last decade had the same failure: humans were too slow. Not uninformed — too slow. Prahari removes human latency from first-response by deploying a graded autonomous intervention engine directly on top of existing camera infrastructure.
 
 **What we are NOT building:**  
 - A surveillance platform (we do not identify individuals)  
@@ -81,7 +81,7 @@ A prediction-first, action-capable system that:
 - Role: Monitors camera feeds, coordinates with RPF, manages platform congestion
 - Current tool: Live CCTV on multi-monitor wall, radio/phone to issue orders
 - Pain: Watching 7–15 screens simultaneously during peak hours, decision deferred to supervisors
-- What CrowdGuard gives them: Pre-staged decisions, one-tap confirm, confidence that L1 is already handled
+- What Prahari gives them: Pre-staged decisions, one-tap confirm, confidence that L1 is already handled
 
 ### Secondary (Decision Maker — Who Buys)
 **Railway Ministry / RailTel Technology Head**
@@ -139,7 +139,7 @@ Black  (Lethal):   6+ persons/m²      — L2/L3 stage
 
 **Description:** The core innovation. Track crowd movement direction and speed per zone using optical flow or centroid tracking. Feed into LSTM sequence model to predict density state 30/60/90 seconds ahead. Display predicted density on the station map as a "future state" overlay.
 
-**Why this matters:** Detection is solved. Prediction is not. This is what differentiates CrowdGuard from every competitor.
+**Why this matters:** Detection is solved. Prediction is not. This is what differentiates Prahari from every competitor.
 
 **Inputs:** Historical density sequence (last 30 seconds of per-zone density counts)  
 **Outputs:** Predicted density state at t+30s, t+60s, t+90s per zone
@@ -221,7 +221,7 @@ Black  (Lethal):   6+ persons/m²      — L2/L3 stage
 
 ### F5 — Split-Screen Demo Mode (MANDATORY FOR DEMO)
 
-**Description:** Side-by-side view comparing CrowdGuard response vs. human-operated response on the same input scenario. This is the killer demo moment that makes the value proposition undeniable.
+**Description:** Side-by-side view comparing Prahari response vs. human-operated response on the same input scenario. This is the killer demo moment that makes the value proposition undeniable.
 
 **Left panel: Human-Operated Station**
 - Same video input
@@ -230,14 +230,14 @@ Black  (Lethal):   6+ persons/m²      — L2/L3 stage
 - Operator response simulated at t=4m12s (realistic based on research)
 - Crowd crush icon appears at t=3m08s
 
-**Right panel: CrowdGuard**
+**Right panel: Prahari**
 - Autonomous interventions firing from t=45s
 - Crowd never reaches crush density
 - Response time counters visible
 
 **Bottom bar:**
 ```
-Human Response Time: 4 minutes 12 seconds    |    CrowdGuard Response Time: 2.3 seconds
+Human Response Time: 4 minutes 12 seconds    |    Prahari Response Time: 2.3 seconds
 Crush occurred: YES                           |    Crush prevented: YES
 ```
 
@@ -298,11 +298,11 @@ When an L2 RPF deployment intervention fires, a widget appears in the right side
 
 ### F11 — Phone Notification Popup
 
-When the RPF alert fires (L2) or a critical L3 intervention is staged: a simulated smartphone mockup slides in from the bottom-right corner. The phone shows a notification card with CrowdGuard logo, alert message, zone, timestamp, and action. After 8 seconds the phone slides back out. Represents the real-world alert that would be sent to RPF officers' devices.
+When the RPF alert fires (L2) or a critical L3 intervention is staged: a simulated smartphone mockup slides in from the bottom-right corner. The phone shows a notification card with Prahari logo, alert message, zone, timestamp, and action. After 8 seconds the phone slides back out. Represents the real-world alert that would be sent to RPF officers' devices.
 
 **Notification format:**  
 ```
-🚨 CrowdGuard Alert
+🚨 Prahari Alert
 Zone: FOB-1 — CRITICAL
 "Crowd surge detected. Immediate response required."
 [View Details]  [Acknowledge]
@@ -333,7 +333,7 @@ A video element plays real crowd footage in a Picture-in-Picture panel at the bo
 t=0:00   Baseline crowd — Green zones
 t=0:45   Flow vectors on FOB-3 begin converging
 t=1:00   Zone density crosses Amber on two platforms
-t=1:30   ⚡ CrowdGuard: L1 PA fires autonomously — 
+t=1:30   ⚡ Prahari: L1 PA fires autonomously — 
            "Platform 12 is congested. Please proceed via Gate C."
 t=1:45   Flow dispersion begins (after L1 PA)
 t=2:00   Zone density returns to Amber
@@ -373,13 +373,13 @@ t=4:15   [CRUSH HAS ALREADY OCCURRED]
 **Step 5 — Split Screen Reveal (60 seconds)**
 - Switch to split-screen mode
 - Left: human-operated (no intervention until t=4m12s, crush occurs at t=3m08s)
-- Right: CrowdGuard (intervention at t=1m30s, crush prevented)
+- Right: Prahari (intervention at t=1m30s, crush prevented)
 - Bottom bar numbers update
-- Presenter: "2.3 seconds. That's how long it takes CrowdGuard to respond. The human took 4 minutes. The crush happened at 3 minutes."
+- Presenter: "2.3 seconds. That's how long it takes Prahari to respond. The human took 4 minutes. The crush happened at 3 minutes."
 
 **Step 6 — Solution Close (30 seconds)**
 - Return to dashboard overview
-- Show: "Indian Railways is installing ₹150 billion worth of cameras. CrowdGuard is the intelligence layer that makes them act, not just watch."
+- Show: "Indian Railways is installing ₹150 billion worth of cameras. Prahari is the intelligence layer that makes them act, not just watch."
 - GitHub QR code visible
 
 **Total demo time: ~3–4 minutes (fits within video requirement)**
@@ -458,7 +458,7 @@ t=4:15   [CRUSH HAS ALREADY OCCURRED]
 ### 7.3 Directory Structure
 
 ```
-crowdguard/
+prahari/
 ├── backend/
 │   ├── main.py                 # FastAPI app + WebSocket endpoint
 │   ├── vision/
@@ -678,7 +678,7 @@ Sizes:       xs: 11px, sm: 12px, base: 14px, lg: 16px, xl: 20px, 2xl: 24px
 │                              │                                  │
 ├──────────────────────────────┴──────────────────────────────────┤
 │                                                                  │
-│  Human Response:  4 min 12 sec  │  CrowdGuard: 2.3 seconds     │
+│  Human Response:  4 min 12 sec  │  Prahari: 2.3 seconds     │
 │  Outcome: CRUSH OCCURRED        │  Outcome: CRUSH PREVENTED     │
 │                                                                  │
 └──────────────────────────────────────────────────────────────────┘
@@ -867,13 +867,13 @@ Returns current demo scenario state.
   - Timeline of events: when which zone hits which density
   - Supports 2x speed replay
 - [ ] `split_screen.py`: Runs two parallel timelines from same input
-  - Right: full CrowdGuard logic
+  - Right: full Prahari logic
   - Left: same input, but interventions suppressed until t=4m12s
 
 **Person B:**
 - [ ] `SplitScreen.tsx`: Side-by-side layout
   - Left panel: "Human-Operated" with no auto-interventions
-  - Right panel: CrowdGuard with full autonomy
+  - Right panel: Prahari with full autonomy
   - Bottom bar: response time comparison, outcome badges
 - [ ] "CRUSH OCCURRED" animation on left panel at t=3m08s
 - [ ] "AVERTED" badge on right panel
@@ -982,7 +982,7 @@ Returns current demo scenario state.
 | 2 | The Failure | The current system: cameras + humans + slow decision chain. Visual timeline of a stampede forming vs. human response time. |
 | 3 | The Real Problem | "The cameras exist. The data exists. The problem is the 4-minute human decision loop." Show the 8–15 minute warning window research. |
 | 4 | Existing Solutions & Why They Fail | Competitor table: Thales, Createc, Kumbh ICCC. All: "alert humans." None: autonomous action. |
-| 5 | Introducing CrowdGuard | One-line: "Predict → Act → Prevent." Three-layer diagram. |
+| 5 | Introducing Prahari | One-line: "Predict → Act → Prevent." Three-layer diagram. |
 | 6 | How It Works: Predict | 90-second flow vector forecasting. Show the prediction overlay screenshot. |
 | 7 | How It Works: Respond | Graded autonomy (L1/L2/L3). L1 fires in 2.3 seconds. |
 | 8 | Live Demo | [EMBED DEMO VIDEO OR LINK] |
@@ -1061,5 +1061,5 @@ The specific language to use:
 
 ---
 
-*CrowdGuard — PRD v1.0*  
+*Prahari — PRD v1.0*  
 *Build the demo first. The demo is the product.*
