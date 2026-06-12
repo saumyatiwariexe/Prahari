@@ -24,14 +24,13 @@ venv/
 env/
 *.env
 
-# Models (large files — add via Git LFS or download separately)
-data/models/*.pt
-data/models/*.pth
+# Models — downloaded automatically by ultralytics on first run
+*.pt
+*.pth
 
-# Video data (large files)
-data/videos/*.mp4
-data/videos/*.avi
-data/videos/*.mkv
+# Video data — place your own footage here (not committed)
+data/videos/
+frontend/public/videos/
 
 # Node
 node_modules/
