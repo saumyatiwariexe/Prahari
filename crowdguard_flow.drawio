@@ -1,0 +1,358 @@
+<mxfile host="app.diagrams.net" version="21.6.5" type="device">
+  <diagram id="d1" name="1. Data Pipeline">
+    <mxGraphModel dx="1422" dy="762" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="1000" math="0" shadow="0">
+      <root>
+        <mxCell id="d1_0" />
+        <mxCell id="d1_1" parent="d1_0" />
+        <mxCell id="d1_title" value="CrowdGuard — System Data Pipeline" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=20;fontStyle=1;" vertex="1" parent="d1_1">
+          <mxGeometry x="234" y="10" width="700" height="36" as="geometry" />
+        </mxCell>
+        <mxCell id="d1_video" value="&lt;b&gt;VIDEO INPUT&lt;/b&gt;&lt;br/&gt;demo_crowd.mp4 — ShanghaiTech Part A (5-min clip)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;" vertex="1" parent="d1_1">
+          <mxGeometry x="434" y="60" width="300" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="d1_e1" value="frames @ 10 FPS" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;fontSize=10;fontStyle=2;" edge="1" source="d1_video" target="d1_vision" parent="d1_1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="d1_vision" value="VISION LAYER — backend/vision/" style="swimlane;fontStyle=1;align=left;startSize=28;fillColor=#f5f5f5;strokeColor=#555;fontColor=#333;fontSize=11;" vertex="1" parent="d1_1">
+          <mxGeometry x="284" y="160" width="600" height="180" as="geometry" />
+        </mxCell>
+        <mxCell id="d1_det" value="&lt;b&gt;detector.py&lt;/b&gt;&lt;br/&gt;YOLOv8n inference&lt;br/&gt;→ bounding boxes per frame" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=10;" vertex="1" parent="d1_vision">
+          <mxGeometry x="20" y="38" width="165" height="65" as="geometry" />
+        </mxCell>
+        <mxCell id="d1_trk" value="&lt;b&gt;tracker.py&lt;/b&gt;&lt;br/&gt;ByteTrack IDs&lt;br/&gt;zone assign + density/m²" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=10;" vertex="1" parent="d1_vision">
+          <mxGeometry x="215" y="38" width="165" height="65" as="geometry" />
+        </mxCell>
+        <mxCell id="d1_zm" value="&lt;b&gt;zone_map.py&lt;/b&gt;&lt;br/&gt;10 zones: P1–P6&lt;br/&gt;FOB-1/2, Gate A/B/C" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=10;" vertex="1" parent="d1_vision">
+          <mxGeometry x="410" y="38" width="165" height="65" as="geometry" />
+        </mxCell>
+        <mxCell id="d1_vout" value="OUTPUT → per-zone { density (persons/m²), count, color, flow_vector { dx, dy, magnitude } }" style="text;html=1;strokeColor=#aaa;fillColor=#eee;align=center;fontSize=10;fontStyle=2;" vertex="1" parent="d1_vision">
+          <mxGeometry x="20" y="118" width="560" height="48" as="geometry" />
+        </mxCell>
+        <mxCell id="d1_ev1" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;" edge="1" source="d1_det" target="d1_trk" parent="d1_vision">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="d1_ev2" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;" edge="1" source="d1_trk" target="d1_zm" parent="d1_vision">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="d1_e2" value="zone states" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;fontSize=10;fontStyle=2;" edge="1" source="d1_vision" target="d1_pred" parent="d1_1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="d1_pred" value="PREDICTION LAYER — backend/prediction/" style="swimlane;fontStyle=1;align=left;startSize=28;fillColor=#f5f5f5;strokeColor=#555;fontColor=#333;fontSize=11;" vertex="1" parent="d1_1">
+          <mxGeometry x="284" y="380" width="600" height="140" as="geometry" />
+        </mxCell>
+        <mxCell id="d1_ext" value="&lt;b&gt;extrapolator.py&lt;/b&gt;&lt;br/&gt;Rule-based trend extrapolation&lt;br/&gt;Convergence detection on adjacent zones" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10;" vertex="1" parent="d1_pred">
+          <mxGeometry x="20" y="38" width="255" height="65" as="geometry" />
+        </mxCell>
+        <mxCell id="d1_lstm" value="&lt;b&gt;lstm_model.py&lt;/b&gt;&lt;br/&gt;LSTM sequence prediction (optional)&lt;br/&gt;Fallback → rule-based if time-constrained" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10;" vertex="1" parent="d1_pred">
+          <mxGeometry x="300" y="38" width="255" height="65" as="geometry" />
+        </mxCell>
+        <mxCell id="d1_pout" value="OUTPUT → t+30s / t+60s / t+90s predicted density per zone" style="text;html=1;strokeColor=#aaa;fillColor=#eee;align=center;fontSize=10;fontStyle=2;" vertex="1" parent="d1_pred">
+          <mxGeometry x="20" y="110" width="560" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="d1_e3" value="current + predictions" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;fontSize=10;fontStyle=2;" edge="1" source="d1_pred" target="d1_dec" parent="d1_1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="d1_dec" value="DECISION ENGINE — backend/decision/engine.py" style="swimlane;fontStyle=1;align=left;startSize=28;fillColor=#f8f8f8;strokeColor=#333;fontColor=#333;fontSize=11;" vertex="1" parent="d1_1">
+          <mxGeometry x="234" y="560" width="700" height="215" as="geometry" />
+        </mxCell>
+        <mxCell id="d1_l1" value="&lt;b&gt;LEVEL 1 — AUTO&lt;/b&gt;&lt;br/&gt;&lt;br/&gt;Fires in &lt;b&gt;&lt;3 seconds&lt;/b&gt;&lt;br/&gt;No human input&lt;br/&gt;&lt;br/&gt;• PA Announcement&lt;br/&gt;• Signage update&lt;br/&gt;• Escalator direction flip&lt;br/&gt;&lt;br/&gt;TRIGGER: density ≥ 5/m²" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;align=left;spacingLeft=8;verticalAlign=top;" vertex="1" parent="d1_dec">
+          <mxGeometry x="20" y="38" width="200" height="162" as="geometry" />
+        </mxCell>
+        <mxCell id="d1_l2" value="&lt;b&gt;LEVEL 2 — STAGED&lt;/b&gt;&lt;br/&gt;&lt;br/&gt;&lt;b&gt;10-second cancel window&lt;/b&gt;&lt;br/&gt;Human can cancel&lt;br/&gt;&lt;br/&gt;• Gate reduction 50%&lt;br/&gt;• RPF deploy request&lt;br/&gt;• Auto-executes at t=10s&lt;br/&gt;&lt;br/&gt;TRIGGER: density ≥ 6/m²" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=10;align=left;spacingLeft=8;verticalAlign=top;" vertex="1" parent="d1_dec">
+          <mxGeometry x="250" y="38" width="200" height="162" as="geometry" />
+        </mxCell>
+        <mxCell id="d1_l3" value="&lt;b&gt;LEVEL 3 — CONFIRM&lt;/b&gt;&lt;br/&gt;&lt;br/&gt;&lt;b&gt;NEVER auto-fires&lt;/b&gt;&lt;br/&gt;Explicit tap required&lt;br/&gt;&lt;br/&gt;• Platform full closure&lt;br/&gt;• Pre-filled decision card&lt;br/&gt;• One-tap confirm only&lt;br/&gt;&lt;br/&gt;TRIGGER: predicted crush &lt;60s" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=10;align=left;spacingLeft=8;verticalAlign=top;" vertex="1" parent="d1_dec">
+          <mxGeometry x="480" y="38" width="200" height="162" as="geometry" />
+        </mxCell>
+        <mxCell id="d1_e4" value="interventions + zone data" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;fontSize=10;fontStyle=2;" edge="1" source="d1_dec" target="d1_api" parent="d1_1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="d1_api" value="&lt;b&gt;FastAPI Backend — main.py&lt;/b&gt;&lt;br/&gt;WebSocket /ws/live → push every 100ms  |  POST /demo/start  |  POST /intervention/{id}/confirm  |  POST /intervention/{id}/cancel" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=10;" vertex="1" parent="d1_1">
+          <mxGeometry x="334" y="820" width="500" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="d1_e5" value="JSON over WebSocket (every 100ms)" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;fontSize=10;fontStyle=2;" edge="1" source="d1_api" target="d1_fe" parent="d1_1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="d1_fe" value="&lt;b&gt;Next.js Frontend — frontend/app/page.tsx&lt;/b&gt;&lt;br/&gt;TailwindCSS + Framer Motion + Recharts  |  Dashboard View  ↔  Split Screen Demo" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=10;" vertex="1" parent="d1_1">
+          <mxGeometry x="334" y="930" width="500" height="60" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+
+  <diagram id="d2" name="2. UI Screen Flow">
+    <mxGraphModel dx="1422" dy="762" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="900" math="0" shadow="0">
+      <root>
+        <mxCell id="d2_0" />
+        <mxCell id="d2_1" parent="d2_0" />
+        <mxCell id="d2_title" value="CrowdGuard — UI Screen Flow" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=20;fontStyle=1;" vertex="1" parent="d2_1">
+          <mxGeometry x="234" y="10" width="700" height="36" as="geometry" />
+        </mxCell>
+        <mxCell id="d2_load" value="&lt;b&gt;Browser opens&lt;/b&gt;&lt;br/&gt;localhost:3000" style="ellipse;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;" vertex="1" parent="d2_1">
+          <mxGeometry x="60" y="55" width="150" height="55" as="geometry" />
+        </mxCell>
+        <mxCell id="d2_ws" value="&lt;b&gt;WebSocket connects&lt;/b&gt;&lt;br/&gt;lib/websocket.ts → /ws/live&lt;br/&gt;status: ● LIVE" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;" vertex="1" parent="d2_1">
+          <mxGeometry x="270" y="55" width="190" height="55" as="geometry" />
+        </mxCell>
+        <mxCell id="d2_e_lw" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" source="d2_load" target="d2_ws" parent="d2_1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="d2_header" value="HEADER BAR (always visible)     [CG] CrowdGuard  |  Simulation Environment  |  [Dashboard]  [Split Screen Demo]  |  STATUS ● LIVE  ⏱  |  [▶ Start Demo]" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#333;fontSize=10;fontStyle=1;" vertex="1" parent="d2_1">
+          <mxGeometry x="60" y="160" width="1049" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="d2_e_wh" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" source="d2_ws" target="d2_header" parent="d2_1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="d2_startdemo" value="POST /demo/start&lt;br/&gt;scenario_runner.py begins&lt;br/&gt;FOB-3 Event timeline fires" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=10;" vertex="1" parent="d2_1">
+          <mxGeometry x="870" y="250" width="200" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="d2_e_start" value="▶ Start Demo" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;fontSize=9;fontStyle=2;" edge="1" source="d2_header" target="d2_startdemo" parent="d2_1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="d2_dash" value="DASHBOARD VIEW (default — view=&quot;dashboard&quot;)" style="swimlane;fontStyle=1;align=left;startSize=28;fillColor=#f0f7ff;strokeColor=#6c8ebf;fontColor=#333;fontSize=11;" vertex="1" parent="d2_1">
+          <mxGeometry x="60" y="260" width="580" height="570" as="geometry" />
+        </mxCell>
+        <mxCell id="d2_map" value="&lt;b&gt;StationMap.tsx&lt;/b&gt;&lt;br/&gt;SVG station layout&lt;br/&gt;• Zone overlays: green / amber / red / black&lt;br/&gt;• Animated flow vector arrows&lt;br/&gt;• Ghost overlay: t+90s predicted state&lt;br/&gt;• Labels: P1–P6, FOB-1/2, Gate A/B/C" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=10;align=left;spacingLeft=6;verticalAlign=top;" vertex="1" parent="d2_dash">
+          <mxGeometry x="20" y="40" width="280" height="130" as="geometry" />
+        </mxCell>
+        <mxCell id="d2_chart" value="&lt;b&gt;ZoneChart.tsx&lt;/b&gt;&lt;br/&gt;Sparkline per zone, last 30 ticks&lt;br/&gt;Updates on every WebSocket message" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=10;align=left;spacingLeft=6;" vertex="1" parent="d2_dash">
+          <mxGeometry x="20" y="190" width="280" height="75" as="geometry" />
+        </mxCell>
+        <mxCell id="d2_crit" value="&lt;b&gt;Critical Zones Panel&lt;/b&gt;&lt;br/&gt;FOB1 / FOB2 / P3 / GATE_B&lt;br/&gt;density/m²  +  person count" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10;align=left;spacingLeft=6;" vertex="1" parent="d2_dash">
+          <mxGeometry x="320" y="40" width="240" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="d2_feed" value="&lt;b&gt;InterventionFeed.tsx&lt;/b&gt;&lt;br/&gt;Scrolling action log&lt;br/&gt;• Color-coded: L1=green, L2=amber, L3=red&lt;br/&gt;• Timestamp + response_time_ms&lt;br/&gt;• L2 card → [CANCEL] [CONFIRM NOW]&lt;br/&gt;• L3 card → [CONFIRM] (no auto-fire)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=10;align=left;spacingLeft=6;verticalAlign=top;" vertex="1" parent="d2_dash">
+          <mxGeometry x="320" y="140" width="240" height="160" as="geometry" />
+        </mxCell>
+        <mxCell id="d2_fore" value="&lt;b&gt;90s Forecast Summary&lt;/b&gt;&lt;br/&gt;High-risk zones: FOB1, P3, GATE_B&lt;br/&gt;+30s / +60s / +90s density values" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=10;align=left;spacingLeft=6;" vertex="1" parent="d2_dash">
+          <mxGeometry x="320" y="320" width="240" height="75" as="geometry" />
+        </mxCell>
+        <mxCell id="d2_l2c" value="L2 Countdown Card  ████░░░░  7s&lt;br/&gt;&lt;br/&gt;[CANCEL]           [CONFIRM NOW]" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=10;" vertex="1" parent="d2_dash">
+          <mxGeometry x="20" y="310" width="270" height="65" as="geometry" />
+        </mxCell>
+        <mxCell id="d2_l3c" value="L3 Confirm Card — no countdown&lt;br/&gt;Pre-filled: zone, trigger, action&lt;br/&gt;&lt;br/&gt;                    [CONFIRM]" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=10;" vertex="1" parent="d2_dash">
+          <mxGeometry x="20" y="400" width="270" height="65" as="geometry" />
+        </mxCell>
+        <mxCell id="d2_legend" value="DENSITY SCALE:  🟢 0–3/m² Safe  |  🟡 3–5/m² Warning  |  🔴 5–6/m² Critical  |  ⚫ 6+/m² Lethal" style="text;html=1;strokeColor=#bbb;fillColor=#eee;align=center;fontSize=9;fontStyle=2;" vertex="1" parent="d2_dash">
+          <mxGeometry x="20" y="495" width="540" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="d2_split" value="SPLIT SCREEN DEMO (view=&quot;split&quot;)  —  SplitScreen.tsx" style="swimlane;fontStyle=1;align=left;startSize=28;fillColor=#fff8f8;strokeColor=#b85450;fontColor=#333;fontSize=11;" vertex="1" parent="d2_1">
+          <mxGeometry x="660" y="260" width="449" height="490" as="geometry" />
+        </mxCell>
+        <mxCell id="d2_human" value="❌  HUMAN-OPERATED&lt;br/&gt;'Current System'&lt;br/&gt;&lt;br/&gt;Same video input&lt;br/&gt;Interventions suppressed&lt;br/&gt;Shows 'Waiting for operator...'&lt;br/&gt;&lt;br/&gt;t=3:08 → CRUSH FORMS&lt;br/&gt;         RED FLASH animation&lt;br/&gt;t=4:12 → Operator responds&lt;br/&gt;         CRUSH ALREADY OCCURRED" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=10;align=left;spacingLeft=6;verticalAlign=top;" vertex="1" parent="d2_split">
+          <mxGeometry x="20" y="40" width="190" height="200" as="geometry" />
+        </mxCell>
+        <mxCell id="d2_cgp" value="✅  CROWDGUARD&lt;br/&gt;'Autonomous Response'&lt;br/&gt;&lt;br/&gt;Same video input&lt;br/&gt;Full autonomy enabled&lt;br/&gt;&lt;br/&gt;t=1:30 → L1 PA fires&lt;br/&gt;         Response: 2.3s&lt;br/&gt;t=2:30 → Incident averted&lt;br/&gt;         GREEN AVERTED badge" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;align=left;spacingLeft=6;verticalAlign=top;" vertex="1" parent="d2_split">
+          <mxGeometry x="240" y="40" width="190" height="200" as="geometry" />
+        </mxCell>
+        <mxCell id="d2_bar" value="COMPARISON BAR&lt;br/&gt;&lt;br/&gt;Human Response:  4 min 12 sec  |  CrowdGuard:  2.3 seconds&lt;br/&gt;Crush occurred:  YES  ✗         |  Crush prevented:  YES  ✓" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#333;fontSize=10;fontStyle=1;" vertex="1" parent="d2_split">
+          <mxGeometry x="20" y="265" width="410" height="75" as="geometry" />
+        </mxCell>
+        <mxCell id="d2_anim" value="ANIMATIONS (Framer Motion):&lt;br/&gt;• Red screen flash on human side at t=3:08&lt;br/&gt;• 'CRUSH OCCURRED' overlay&lt;br/&gt;• Green 'AVERTED' badge on CG side&lt;br/&gt;• Response time counters update live via setInterval&lt;br/&gt;• Smooth fade transition between Dashboard ↔ Split" style="text;html=1;strokeColor=#ccc;fillColor=#fafafa;align=left;fontSize=9;spacingLeft=6;verticalAlign=top;" vertex="1" parent="d2_split">
+          <mxGeometry x="20" y="365" width="410" height="105" as="geometry" />
+        </mxCell>
+        <mxCell id="d2_nav1" value="click Dashboard" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;fontSize=9;fontStyle=2;exitX=0.3;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" source="d2_header" target="d2_dash" parent="d2_1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="d2_nav2" value="click Split Screen Demo" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;fontSize=9;fontStyle=2;exitX=0.7;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" source="d2_header" target="d2_split" parent="d2_1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+
+  <diagram id="d3" name="3. Intervention Logic">
+    <mxGraphModel dx="1422" dy="762" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1400" pageHeight="820" math="0" shadow="0">
+      <root>
+        <mxCell id="d3_0" />
+        <mxCell id="d3_1" parent="d3_0" />
+        <mxCell id="d3_title" value="CrowdGuard — Intervention Decision Logic" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=20;fontStyle=1;" vertex="1" parent="d3_1">
+          <mxGeometry x="300" y="10" width="800" height="36" as="geometry" />
+        </mxCell>
+        <mxCell id="d3_eval" value="&lt;b&gt;Zone Density Evaluated&lt;/b&gt;&lt;br/&gt;engine.py — every 100ms&lt;br/&gt;10 zones checked simultaneously" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;" vertex="1" parent="d3_1">
+          <mxGeometry x="500" y="50" width="400" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="d3_cls" value="&lt;b&gt;Density Classification&lt;/b&gt;&lt;br/&gt;🟢 0–3/m² Green (safe)    🟡 3–5/m² Amber (monitor)    🔴 5–6/m² Red (L1)    ⚫ 6+/m² Black (L2)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#333;fontSize=10;fontStyle=1;" vertex="1" parent="d3_1">
+          <mxGeometry x="350" y="168" width="700" height="55" as="geometry" />
+        </mxCell>
+        <mxCell id="d3_e_ec" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;" edge="1" source="d3_eval" target="d3_cls" parent="d3_1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="d3_none" value="No Intervention&lt;br/&gt;Continue monitoring" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;" vertex="1" parent="d3_1">
+          <mxGeometry x="60" y="290" width="170" height="55" as="geometry" />
+        </mxCell>
+        <mxCell id="d3_e_none" value="GREEN / AMBER" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;fontSize=9;fontStyle=2;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" source="d3_cls" target="d3_none" parent="d3_1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="d3_l3b" value="&lt;b&gt;LEVEL 3 — HUMAN CONFIRM&lt;/b&gt;" style="swimlane;fontStyle=1;align=center;startSize=28;fillColor=#f8cecc;strokeColor=#b85450;fontColor=#7f1d1d;fontSize=11;" vertex="1" parent="d3_1">
+          <mxGeometry x="290" y="270" width="300" height="280" as="geometry" />
+        </mxCell>
+        <mxCell id="d3_l3_trig" value="TRIGGER: Predicted crush convergence in &lt;60s&lt;br/&gt;(extrapolator.py t+60 → lethal threshold)" style="text;html=1;strokeColor=#b85450;fillColor=#fff5f5;align=left;fontSize=9;spacingLeft=4;verticalAlign=middle;" vertex="1" parent="d3_l3b">
+          <mxGeometry x="10" y="36" width="280" height="45" as="geometry" />
+        </mxCell>
+        <mxCell id="d3_l3_card" value="🚨 Pre-filled decision card in UI&lt;br/&gt;NO countdown — waits indefinitely&lt;br/&gt;&lt;b&gt;NEVER auto-fires&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fca5a5;strokeColor=#ef4444;fontSize=10;" vertex="1" parent="d3_l3b">
+          <mxGeometry x="10" y="90" width="280" height="65" as="geometry" />
+        </mxCell>
+        <mxCell id="d3_l3_act" value="PROPOSED ACTION:&lt;br/&gt;• Full Platform Closure&lt;br/&gt;&lt;br/&gt;Card shows: zone, trigger, action (pre-filled)&lt;br/&gt;&lt;br/&gt;                         [CONFIRM]" style="text;html=1;strokeColor=none;fillColor=none;align=left;fontSize=10;spacingLeft=4;" vertex="1" parent="d3_l3b">
+          <mxGeometry x="10" y="165" width="280" height="105" as="geometry" />
+        </mxCell>
+        <mxCell id="d3_e_l3" value="predicted convergence" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;fontSize=9;fontStyle=2;exitX=0.35;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" source="d3_cls" target="d3_l3b" parent="d3_1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="d3_l1b" value="&lt;b&gt;LEVEL 1 — AUTONOMOUS&lt;/b&gt;" style="swimlane;fontStyle=1;align=center;startSize=28;fillColor=#d5e8d4;strokeColor=#82b366;fontColor=#14532d;fontSize=11;" vertex="1" parent="d3_1">
+          <mxGeometry x="640" y="270" width="300" height="280" as="geometry" />
+        </mxCell>
+        <mxCell id="d3_l1_trig" value="TRIGGER: Zone density ≥ 5/m² (RED)&lt;br/&gt;OR: Convergent flow vectors detected" style="text;html=1;strokeColor=#82b366;fillColor=#f0fdf4;align=left;fontSize=9;spacingLeft=4;verticalAlign=middle;" vertex="1" parent="d3_l1b">
+          <mxGeometry x="10" y="36" width="280" height="45" as="geometry" />
+        </mxCell>
+        <mxCell id="d3_l1_fire" value="🔥 Fires IMMEDIATELY — &lt;3 seconds&lt;br/&gt;No human approval needed&lt;br/&gt;Cannot make situation physically worse" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#86efac;strokeColor=#22c55e;fontSize=10;" vertex="1" parent="d3_l1b">
+          <mxGeometry x="10" y="90" width="280" height="65" as="geometry" />
+        </mxCell>
+        <mxCell id="d3_l1_act" value="ACTIONS:&lt;br/&gt;• PA Announcement (audio plays)&lt;br/&gt;• Digital signage update&lt;br/&gt;• Escalator direction flip&lt;br/&gt;&lt;br/&gt;→ Logged to Intervention Feed&lt;br/&gt;   with timestamp + response_time_ms" style="text;html=1;strokeColor=none;fillColor=none;align=left;fontSize=10;spacingLeft=4;" vertex="1" parent="d3_l1b">
+          <mxGeometry x="10" y="165" width="280" height="105" as="geometry" />
+        </mxCell>
+        <mxCell id="d3_e_l1" value="RED density" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;fontSize=9;fontStyle=2;exitX=0.55;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" source="d3_cls" target="d3_l1b" parent="d3_1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="d3_l2b" value="&lt;b&gt;LEVEL 2 — STAGED (10s window)&lt;/b&gt;" style="swimlane;fontStyle=1;align=center;startSize=28;fillColor=#ffe6cc;strokeColor=#d79b00;fontColor=#78350f;fontSize=11;" vertex="1" parent="d3_1">
+          <mxGeometry x="990" y="270" width="300" height="280" as="geometry" />
+        </mxCell>
+        <mxCell id="d3_l2_trig" value="TRIGGER: Zone density ≥ 6/m² (BLACK)&lt;br/&gt;OR: Multiple zones simultaneously RED" style="text;html=1;strokeColor=#d79b00;fillColor=#fffbeb;align=left;fontSize=9;spacingLeft=4;verticalAlign=middle;" vertex="1" parent="d3_l2b">
+          <mxGeometry x="10" y="36" width="280" height="45" as="geometry" />
+        </mxCell>
+        <mxCell id="d3_l2_card" value="⏱ 10-second countdown card in UI&lt;br/&gt;Human can cancel at any point&lt;br/&gt;Auto-executes when timer hits 0" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fcd34d;strokeColor=#d97706;fontSize=10;" vertex="1" parent="d3_l2b">
+          <mxGeometry x="10" y="90" width="280" height="65" as="geometry" />
+        </mxCell>
+        <mxCell id="d3_l2_act" value="STAGED ACTIONS:&lt;br/&gt;• Gate-B throughput reduction 50%&lt;br/&gt;• RPF deployment request&lt;br/&gt;&lt;br/&gt;[CANCEL]           [CONFIRM NOW]&lt;br/&gt;&lt;br/&gt;→ Auto-executes at t=10s if no cancel" style="text;html=1;strokeColor=none;fillColor=none;align=left;fontSize=10;spacingLeft=4;" vertex="1" parent="d3_l2b">
+          <mxGeometry x="10" y="165" width="280" height="105" as="geometry" />
+        </mxCell>
+        <mxCell id="d3_e_l2" value="BLACK density" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;fontSize=9;fontStyle=2;exitX=0.8;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" source="d3_cls" target="d3_l2b" parent="d3_1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="d3_l3_conf" value="✅ Platform closure fires&lt;br/&gt;logged: status='confirmed'" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;" vertex="1" parent="d3_1">
+          <mxGeometry x="250" y="600" width="185" height="55" as="geometry" />
+        </mxCell>
+        <mxCell id="d3_l3_pend" value="⏸ Card stays visible&lt;br/&gt;waits until human acts" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10;" vertex="1" parent="d3_1">
+          <mxGeometry x="460" y="600" width="185" height="55" as="geometry" />
+        </mxCell>
+        <mxCell id="d3_e_l3c" value="human confirms" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;fontSize=9;fontStyle=2;exitX=0;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" source="d3_l3b" target="d3_l3_conf" parent="d3_1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="d3_e_l3p" value="no action yet" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;fontSize=9;fontStyle=2;exitX=1;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" source="d3_l3b" target="d3_l3_pend" parent="d3_1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="d3_l1_out" value="✅ Logged to feed&lt;br/&gt;Crowd may disperse" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;" vertex="1" parent="d3_1">
+          <mxGeometry x="720" y="600" width="185" height="55" as="geometry" />
+        </mxCell>
+        <mxCell id="d3_e_l1o" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;" edge="1" source="d3_l1b" target="d3_l1_out" parent="d3_1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="d3_l2_can" value="❌ Action dropped&lt;br/&gt;logged: status='cancelled'" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666;fontSize=10;" vertex="1" parent="d3_1">
+          <mxGeometry x="935" y="600" width="185" height="55" as="geometry" />
+        </mxCell>
+        <mxCell id="d3_l2_exe" value="✅ Action executes&lt;br/&gt;logged: status='confirmed'" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;" vertex="1" parent="d3_1">
+          <mxGeometry x="1150" y="600" width="185" height="55" as="geometry" />
+        </mxCell>
+        <mxCell id="d3_e_l2can" value="cancel" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;fontSize=9;fontStyle=2;exitX=0;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" source="d3_l2b" target="d3_l2_can" parent="d3_1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="d3_e_l2exe" value="timer hits 0 / confirm" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;fontSize=9;fontStyle=2;exitX=1;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" source="d3_l2b" target="d3_l2_exe" parent="d3_1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="d3_pred_note" value="&lt;b&gt;PREDICTION INPUT&lt;/b&gt;&lt;br/&gt;extrapolator.py forecasts&lt;br/&gt;t+30 / t+60 / t+90 per zone&lt;br/&gt;&lt;br/&gt;→ Only L3 can trigger BEFORE&lt;br/&gt;crush threshold is crossed&lt;br/&gt;(pre-emptive intervention)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10;align=left;spacingLeft=6;" vertex="1" parent="d3_1">
+          <mxGeometry x="60" y="390" width="200" height="130" as="geometry" />
+        </mxCell>
+        <mxCell id="d3_e_pred" value="feeds L3 trigger" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;dashed=1;fontSize=9;fontStyle=2;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" source="d3_pred_note" target="d3_l3b" parent="d3_1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+
+  <diagram id="d4" name="4. Demo Timeline">
+    <mxGraphModel dx="1422" dy="762" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1400" pageHeight="720" math="0" shadow="0">
+      <root>
+        <mxCell id="d4_0" />
+        <mxCell id="d4_1" parent="d4_0" />
+        <mxCell id="d4_title" value="CrowdGuard — Demo Scenario Timeline (FOB-3 Event)" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=20;fontStyle=1;" vertex="1" parent="d4_1">
+          <mxGeometry x="200" y="10" width="1000" height="36" as="geometry" />
+        </mxCell>
+        <mxCell id="d4_cg_label" value="✅  CROWDGUARD TIMELINE" style="text;html=1;strokeColor=none;fillColor=#d5e8d4;align=center;fontSize=13;fontStyle=1;" vertex="1" parent="d4_1">
+          <mxGeometry x="60" y="60" width="1280" height="36" as="geometry" />
+        </mxCell>
+        <mxCell id="d4_t0" value="&lt;b&gt;t = 0:00&lt;/b&gt;&lt;br/&gt;Baseline crowd&lt;br/&gt;All zones GREEN&lt;br/&gt;System: NORMAL" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;" vertex="1" parent="d4_1">
+          <mxGeometry x="60" y="110" width="150" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="d4_t45" value="&lt;b&gt;t = 0:45&lt;/b&gt;&lt;br/&gt;Flow vectors on FOB-3&lt;br/&gt;begin converging&lt;br/&gt;Prediction overlay: ⚠ Critical in 90s" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10;" vertex="1" parent="d4_1">
+          <mxGeometry x="270" y="110" width="170" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="d4_t100" value="&lt;b&gt;t = 1:00&lt;/b&gt;&lt;br/&gt;Zones P12 + P16&lt;br/&gt;cross AMBER&lt;br/&gt;System: MONITORING" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10;" vertex="1" parent="d4_1">
+          <mxGeometry x="500" y="110" width="160" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="d4_t130" value="&lt;b&gt;t = 1:30 ⚡&lt;/b&gt;&lt;br/&gt;L1 AUTO fires&lt;br/&gt;Response time: 2.3s&lt;br/&gt;PA audio plays:&lt;br/&gt;'Platform 12 congested.&lt;br/&gt;Proceed via Gate C.'" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=10;fontStyle=1;" vertex="1" parent="d4_1">
+          <mxGeometry x="720" y="95" width="190" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="d4_t200" value="&lt;b&gt;t = 2:00&lt;/b&gt;&lt;br/&gt;Flow dispersion begins&lt;br/&gt;Zones drop back to AMBER&lt;br/&gt;System: ACTIVE" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10;" vertex="1" parent="d4_1">
+          <mxGeometry x="980" y="110" width="160" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="d4_t230" value="&lt;b&gt;t = 2:30 ✅&lt;/b&gt;&lt;br/&gt;'Incident Averted'&lt;br/&gt;logged in feed&lt;br/&gt;Zones return GREEN" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;fontStyle=1;" vertex="1" parent="d4_1">
+          <mxGeometry x="1200" y="110" width="155" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="d4_ea" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" source="d4_t0" target="d4_t45" parent="d4_1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="d4_eb" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" source="d4_t45" target="d4_t100" parent="d4_1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="d4_ec" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" source="d4_t100" target="d4_t130" parent="d4_1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="d4_ed" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" source="d4_t130" target="d4_t200" parent="d4_1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="d4_ee" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" source="d4_t200" target="d4_t230" parent="d4_1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="d4_div" value="" style="line;strokeWidth=2;fillColor=none;strokeColor=#333;dashed=1;" vertex="1" parent="d4_1">
+          <mxGeometry x="60" y="245" width="1280" height="10" as="geometry" />
+        </mxCell>
+        <mxCell id="d4_h_label" value="❌  HUMAN-OPERATED PARALLEL TIMELINE (split screen left panel)" style="text;html=1;strokeColor=none;fillColor=#f8cecc;align=center;fontSize=13;fontStyle=1;" vertex="1" parent="d4_1">
+          <mxGeometry x="60" y="265" width="1280" height="36" as="geometry" />
+        </mxCell>
+        <mxCell id="d4_h0" value="&lt;b&gt;t = 0:00 → 3:07&lt;/b&gt;&lt;br/&gt;Same video input&lt;br/&gt;No interventions&lt;br/&gt;'Waiting for operator...'" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10;" vertex="1" parent="d4_1">
+          <mxGeometry x="60" y="315" width="220" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="d4_h308" value="&lt;b&gt;t = 3:08 💥&lt;/b&gt;&lt;br/&gt;Zone crosses 6+/m²&lt;br/&gt;CRUSH DENSITY reached&lt;br/&gt;RED FLASH animation" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=10;fontStyle=1;" vertex="1" parent="d4_1">
+          <mxGeometry x="340" y="315" width="190" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="d4_h312" value="&lt;b&gt;t = 3:12&lt;/b&gt;&lt;br/&gt;Human operator notices&lt;br/&gt;on camera feed" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=10;" vertex="1" parent="d4_1">
+          <mxGeometry x="590" y="315" width="160" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="d4_h405" value="&lt;b&gt;t = 4:05&lt;/b&gt;&lt;br/&gt;Operator contacts&lt;br/&gt;supervisor by radio" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=10;" vertex="1" parent="d4_1">
+          <mxGeometry x="810" y="315" width="155" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="d4_h412" value="&lt;b&gt;t = 4:12&lt;/b&gt;&lt;br/&gt;Announcement decision&lt;br/&gt;made + issued&lt;br/&gt;&lt;b&gt;CRUSH HAS OCCURRED&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#b85450;fontColor=#ffffff;strokeColor=#7f1d1d;fontSize=10;fontStyle=1;" vertex="1" parent="d4_1">
+          <mxGeometry x="1025" y="315" width="180" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="d4_hf" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" source="d4_h0" target="d4_h308" parent="d4_1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="d4_hg" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" source="d4_h308" target="d4_h312" parent="d4_1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="d4_hh" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" source="d4_h312" target="d4_h405" parent="d4_1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="d4_hi" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" source="d4_h405" target="d4_h412" parent="d4_1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="d4_comp" value="BOTTOM BAR COMPARISON&lt;br/&gt;&lt;br/&gt;Human Response Time:  4 min 12 sec         |         CrowdGuard Response Time:  2.3 seconds&lt;br/&gt;Crush occurred:  YES  ✗                    |         Crush prevented:  YES  ✓" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#333;fontSize=12;fontStyle=1;" vertex="1" parent="d4_1">
+          <mxGeometry x="60" y="445" width="1280" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="d4_steps" value="DEMO STEPS FOR JUDGES:  Step 1 → Opening screen ('18 people died, Feb 15 2025')  |  Step 2 → Normal state (2x speed)  |  Step 3 → Crowd builds + prediction fires  |  Step 4 → L1 auto-response  |  Step 5 → Split screen reveal  |  Step 6 → Solution close + GitHub QR" style="text;html=1;strokeColor=#6c8ebf;fillColor=#dae8fc;align=center;fontSize=10;fontStyle=2;" vertex="1" parent="d4_1">
+          <mxGeometry x="60" y="555" width="1280" height="50" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
