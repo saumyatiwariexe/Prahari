@@ -27,7 +27,7 @@ from constants import density_color
 #        │  P3 (far/background platform section)     │
 #  y=480 └───────────────────────────────────────────┘
 
-DENSITY_MULTIPLIER = 2.5  # scale raw count/area to realistic people/m² — tune if interventions fire too early/late
+DENSITY_MULTIPLIER = 1.0  # raw count / zone area — no artificial inflation
 
 _ACTIVE_ZONES = [
     {"id": "CONC", "x1": 0,   "y1": 0,   "x2": 640, "y2": 120, "area_m2": 60.0},
@@ -131,7 +131,7 @@ class VideoPipeline:
         cap.release()
 
     def _infer(self, frame: np.ndarray) -> dict:
-        results = self._model.track(frame, persist=True, classes=[0], verbose=False, conf=0.3)
+        results = self._model.track(frame, persist=True, classes=[0], verbose=False, conf=0.15, max_det=500)
 
         counts: dict[str, int] = {z["id"]: 0 for z in _ACTIVE_ZONES}
         if results and results[0].boxes is not None:
