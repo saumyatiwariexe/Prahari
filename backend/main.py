@@ -1,5 +1,5 @@
 """
-CrowdGuard — FastAPI backend
+Prahari — FastAPI backend
 
 Two operating modes:
   scenario  — scripted keyframe demo (default); runs the CrowdGuard vs. Human comparison

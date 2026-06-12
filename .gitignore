@@ -28,9 +28,8 @@ env/
 *.pt
 *.pth
 
-# Video data — place your own footage here (not committed)
-data/videos/
-frontend/public/videos/
+# Models — downloaded automatically by ultralytics on first run
+# (videos are committed for demo reproducibility)
 
 # Node
 node_modules/

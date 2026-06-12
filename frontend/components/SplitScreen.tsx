@@ -84,7 +84,7 @@ export default function SplitScreen({ data }: Props) {
         <div className="flex flex-col rounded-xl border border-green-900/60 bg-surface overflow-hidden relative">
           <div className="flex items-center gap-2 px-3 py-2 border-b border-green-900/60 bg-[#0a1a0a]">
             <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
-            <span className="text-xs font-semibold text-green-400">CROWDGUARD — AUTONOMOUS</span>
+            <span className="text-xs font-semibold text-green-400">PRAHARI — AUTONOMOUS</span>
             <span className="ml-auto text-xs text-slate-500">Simulation</span>
           </div>
           <div className="flex-1 p-2 relative">
@@ -135,7 +135,7 @@ export default function SplitScreen({ data }: Props) {
           valueColor="text-red-400"
         />
         <StatBar
-          label="CrowdGuard Response"
+          label="Prahari Response"
           value={cgL1Fired ? "2.3 seconds" : "—"}
           outcome={cgL1Fired && elapsed > 150 ? "CRUSH PREVENTED" : "Active monitoring"}
           outcomeColor={cgL1Fired && elapsed > 150 ? "text-green-400" : "text-slate-400"}

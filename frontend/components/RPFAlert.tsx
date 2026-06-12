@@ -48,7 +48,7 @@ export default function RPFAlert({ active, boothId, distance = "120m" }: Props) 
               <div className="text-sm font-bold text-white mb-1">{boothId}</div>
               <div className="text-xs text-slate-400">Nearest booth · {distance}</div>
               <div className="mt-2 text-[10px] text-red-300 bg-red-950/50 rounded px-2 py-1">
-                L2 · Auto-issued by CrowdGuard
+                L2 · Auto-issued by Prahari
               </div>
             </div>
 

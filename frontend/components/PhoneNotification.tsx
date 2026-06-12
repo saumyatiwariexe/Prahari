@@ -58,7 +58,7 @@ export default function PhoneNotification({ notification, onDismiss }: Props) {
                   >
                     CG
                   </div>
-                  <span className="text-[10px] font-semibold text-white">CrowdGuard</span>
+                  <span className="text-[10px] font-semibold text-white">Prahari</span>
                   <span className="ml-auto text-[9px] text-white/40">now</span>
                 </div>
 

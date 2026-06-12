@@ -2,6 +2,7 @@
 Pre-scripted "FOB-3 Event" demo scenario.
 Generates realistic zone density sequences for CrowdGuard and Human-Operated timelines.
 Run with a video file for real YOLOv8 inference, or use scenario mode for guaranteed demo stability.
+Prahari — Autonomous Station Safety System.
 """
 import math
 import time

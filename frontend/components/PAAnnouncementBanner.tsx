@@ -47,7 +47,7 @@ export default function PAAnnouncementBanner({ message, zone, onDismiss }: Props
                     PA ANNOUNCEMENT
                   </span>
                   <span className="text-xs text-slate-500 border border-slate-700 rounded px-1.5">{zone}</span>
-                  <span className="ml-auto text-xs text-slate-500">Auto-issued by CrowdGuard · L1</span>
+                  <span className="ml-auto text-xs text-slate-500">Auto-issued by Prahari · L1</span>
                 </div>
                 {/* Scrolling ticker */}
                 <div className="overflow-hidden">

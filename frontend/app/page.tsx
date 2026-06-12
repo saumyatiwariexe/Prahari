@@ -157,8 +157,8 @@ export default function Home() {
       {/* Top bar */}
       <header className="flex items-center px-4 py-2 border-b border-[#21262D] gap-4 shrink-0">
         <div className="flex items-center gap-2">
-          <div className="w-6 h-6 rounded bg-blue-600 flex items-center justify-center text-xs font-bold">CG</div>
-          <span className="text-sm font-bold tracking-tight text-white">CrowdGuard</span>
+          <div className="w-6 h-6 rounded bg-blue-600 flex items-center justify-center text-xs font-bold">PR</div>
+          <span className="text-sm font-bold tracking-tight text-white">Prahari</span>
           <span className="text-xs text-slate-500 border border-[#21262D] rounded px-2 py-0.5">
             Simulation Environment
           </span>

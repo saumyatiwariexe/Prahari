@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "CrowdGuard — Autonomous Station Safety",
+  title: "Prahari — Autonomous Station Safety",
   description: "Predict crowd crush formation 90 seconds before it becomes lethal.",
 };
 
