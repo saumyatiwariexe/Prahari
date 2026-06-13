@@ -82,14 +82,13 @@ class VideoPipeline:
     Plain (CPU): YOLOv8m single-pass             → 5fps, ~5-15 detections
     """
 
-    def __init__(self, video_path: str, fps_target: int | None = None, single_zone: bool = False, use_sahi: bool = False):
-        # use_sahi=False: plain YOLOv8m tracking at 5fps → smooth visual boxes
-        # use_sahi=True:  SAHI sliced detection at ~1.5fps → better count accuracy
-        self._use_sahi = use_sahi and _SAHI
+    def __init__(self, video_path: str, fps_target: int | None = None, single_zone: bool = False):
+        # Force CPU for SAHI: torchvision CUDA build is not installed, so
+        # torchvision::nms throws on CUDA tensors when SAHI switches to NMS mode.
+        # CPU SAHI still gives far better counts than single-pass inference.
         if fps_target is None:
-            fps_target = 2 if self._use_sahi else 5
+            fps_target = 2 if _SAHI else 5
         self._tile_size = 192
-        # single_zone: whole frame → P1; avoids false multi-zone splits for single-camera footage
         self._active_zones  = _SINGLE_ACTIVE_ZONES  if single_zone else _ACTIVE_ZONES
         self._passive_zones = _SINGLE_PASSIVE_ZONES if single_zone else _PASSIVE_ZONES
         self.video_path = video_path
@@ -128,17 +127,17 @@ class VideoPipeline:
     # ── Internal ──────────────────────────────────────────────────────────────
 
     def _load_model(self):
-        if self._use_sahi:
+        if _SAHI:
             device = "cpu"
-            print(f"[Prahari] Loading YOLOv8m + SAHI on {device}")
+            print(f"[Prahari] Loading YOLOv8m + SAHI on {device} (torchvision CUDA not installed)")
             self._detection_model = AutoDetectionModel.from_pretrained(
                 model_type="ultralytics",
                 model_path="yolov8m.pt",
-                confidence_threshold=0.08,
+                confidence_threshold=0.08,  # low: catch partially-visible people
                 device=device,
             )
         else:
-            print("[Prahari] Loading YOLOv8m (plain tracking, 5fps)")
+            print("[Prahari] SAHI not found — falling back to plain YOLOv8m")
             self._yolo_model = YOLO("yolov8m.pt")
 
     def _run(self):
@@ -190,7 +189,7 @@ class VideoPipeline:
         print("[Prahari] Pipeline stopped.", flush=True)
 
     def _infer(self, frame: np.ndarray) -> tuple[dict, list]:
-        if self._use_sahi and self._detection_model is not None:
+        if _SAHI and self._detection_model is not None:
             return self._infer_sahi(frame)
         return self._infer_yolo(frame)
 
@@ -212,14 +211,14 @@ class VideoPipeline:
             verbose=0,
         )
 
-        counts: dict[str, int] = {z["id"]: 0 for z in self._active_zones}
+        counts: dict[str, int] = {z["id"]: 0 for z in _ACTIVE_ZONES}
         persons: list[dict] = []
         for obj in result.object_prediction_list:
             if obj.category.name != "person":
                 continue
             cx = (obj.bbox.minx + obj.bbox.maxx) / 2
             cy = (obj.bbox.miny + obj.bbox.maxy) / 2
-            for z in self._active_zones:
+            for z in _ACTIVE_ZONES:
                 if z["x1"] <= cx < z["x2"] and z["y1"] <= cy < z["y2"]:
                     counts[z["id"]] += 1
                     break
@@ -233,24 +232,24 @@ class VideoPipeline:
         return self._counts_to_states(counts), persons
 
     def _infer_yolo(self, frame: np.ndarray) -> tuple[dict, list]:
-        results = self._yolo_model.predict(
+        results = self._yolo_model.track(
             frame,
+            persist=True,
             classes=[0],
             verbose=False,
-            conf=0.25,
-            max_det=300,
-            iou=0.4,
-            device="cpu",  # keep tensors on CPU — torchvision CUDA build not installed
+            conf=0.1,
+            max_det=1000,
+            iou=0.3,
         )
 
-        counts: dict[str, int] = {z["id"]: 0 for z in self._active_zones}
+        counts: dict[str, int] = {z["id"]: 0 for z in _ACTIVE_ZONES}
         persons: list[dict] = []
         if results and results[0].boxes is not None:
             xyxy = results[0].boxes.xyxy.cpu().numpy()
             for box in xyxy:
                 cx = (float(box[0]) + float(box[2])) / 2
                 cy = (float(box[1]) + float(box[3])) / 2
-                for z in self._active_zones:
+                for z in _ACTIVE_ZONES:
                     if z["x1"] <= cx < z["x2"] and z["y1"] <= cy < z["y2"]:
                         counts[z["id"]] += 1
                         break
@@ -265,9 +264,9 @@ class VideoPipeline:
 
     def _counts_to_states(self, counts: dict[str, int]) -> dict:
         states: dict = {}
-        EMA_ALPHA = 0.75  # high alpha = fast response to density changes
+        EMA_ALPHA = 0.35
 
-        for z in self._active_zones:
+        for z in _ACTIVE_ZONES:
             zid = z["id"]
             raw = counts[zid] / z["area_m2"]
             prev = self._ema.get(zid, raw)
@@ -275,7 +274,7 @@ class VideoPipeline:
             self._ema[zid] = smooth
             states[zid] = _make_state(zid, smooth, counts[zid])
 
-        for zid in self._passive_zones:
+        for zid in _PASSIVE_ZONES:
             prev = self._ema.get(zid, 0.4)
             states[zid] = _make_state(zid, prev, 0)
 

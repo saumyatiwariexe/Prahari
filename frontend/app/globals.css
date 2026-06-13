@@ -1,25 +1,53 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
-  --bg:      #0D1117;
-  --surface: #161B22;
-  --border:  #21262D;
+  --bg:        #06080E;
+  --surface:   #080C14;
+  --surface2:  #0C1220;
+  --border:    #142035;
+  --border2:   #0E1E30;
+  --text:      #C8E4FF;
+  --text-dim:  #8AB4D4;
+  --text-dark: #4A6A84;
+  --text-mute: #2C4060;
+  --accent:    #1A90FF;
+  --good:      #00C84C;
+  --warn:      #E8A000;
+  --bad:       #E82020;
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
 body {
   background: var(--bg);
-  color: #E2E8F0;
+  color: var(--text);
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 14px;
+  font-size: 13px;
   overflow: hidden;
 }
 
-.scrollbar-thin::-webkit-scrollbar { width: 4px; }
+.mono { font-family: 'Share Tech Mono', monospace; }
+.jmono { font-family: 'JetBrains Mono', monospace; }
+
+.scrollbar-thin::-webkit-scrollbar { width: 3px; }
 .scrollbar-thin::-webkit-scrollbar-track { background: transparent; }
-.scrollbar-thin::-webkit-scrollbar-thumb { background: #21262D; border-radius: 2px; }
+.scrollbar-thin::-webkit-scrollbar-thumb { background: #142035; border-radius: 2px; }
+
+/* SCADA panel base */
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+}
+.panel-header {
+  padding: 5px 10px;
+  border-bottom: 1px solid var(--border2);
+  background: var(--bg);
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 11px;
+  color: var(--text-mute);
+  letter-spacing: 0.12em;
+}

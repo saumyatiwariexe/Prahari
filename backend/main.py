@@ -12,6 +12,7 @@ REST       /intervention/* → confirm / cancel staged interventions
 """
 
 import asyncio
+import json
 import time
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -149,7 +150,7 @@ async def live_start(source: str = "platform"):
     for buf in _density_hist.values():
         buf.clear()
 
-    pipeline = VideoPipeline(video_path)  # fps_target auto: 5 (CUDA) or 2 (CPU SAHI)
+    pipeline = VideoPipeline(video_path, single_zone=True, use_sahi=True)  # SAHI sliced detection for dense crowds
     pipeline.start()
     mode = "video"
     return {"status": "started", "mode": "video", "source": source}
@@ -202,10 +203,18 @@ async def broadcast_loop():
             # Real video: get latest YOLOv8 zone states (always the most recent frame)
             zone_cg = pipeline.get_states()
             if zone_cg is None:
-                continue  # pipeline not warmed up yet (model still loading)
+                # Model still loading — send heartbeat so frontend loading spinner shows
+                lp = json.dumps({"video_ready": False, "persons": [], "loading": True})
+                for ws in connections[:]:
+                    try:
+                        await ws.send_text(lp)
+                    except Exception:
+                        pass
+                continue
 
             zone_human = zone_cg   # no scripted human-side in live mode
             elapsed = pipeline.elapsed()
+            persons = pipeline.get_persons()
 
             _update_hist(zone_cg)
             predictions = extrapolator.predict(zone_cg, _density_hist)
@@ -230,6 +239,8 @@ async def broadcast_loop():
                 "interventions": all_interventions[:40],
                 "staged": [iv.to_dict() for iv in engine_cg.get_staged()],
                 "system_status": _system_status(zone_cg),
+                "persons": persons,
+                "video_ready": True,
             }
 
         else:
@@ -265,6 +276,8 @@ async def broadcast_loop():
                 "interventions": all_interventions[:40],
                 "staged": [iv.to_dict() for iv in engine_cg.get_staged()],
                 "system_status": _system_status(zone_cg),
+                "persons": [],
+                "video_ready": False,
             }
 
         dead = []

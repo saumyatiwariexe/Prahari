@@ -41,6 +41,10 @@ export interface Intervention {
   side?: "crowdguard" | "human";
 }
 
+export interface PersonBbox {
+  x1: number; y1: number; x2: number; y2: number;
+}
+
 export interface LiveUpdate {
   elapsed: number;
   crowdguard: {
@@ -56,4 +60,6 @@ export interface LiveUpdate {
   interventions: Intervention[];
   staged: Intervention[];
   system_status: SystemStatus;
+  persons?: PersonBbox[];
+  video_ready?: boolean;
 }

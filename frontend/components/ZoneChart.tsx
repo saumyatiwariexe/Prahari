@@ -9,21 +9,36 @@ interface Props {
 
 const TRACKED = ["CONC", "FOB1", "FOB2", "P1", "P2", "P3", "P4"];
 const STATUS_LABEL: Record<string, string> = {
-  green: "OK", amber: "WARN", red: "HIGH", critical: "CRIT",
+  green: "CLR", amber: "CAU", red: "DGR", critical: "CRT",
 };
 
 export default function ZoneChart({ zones, historyMap }: Props) {
   return (
-    <div style={{ padding: "6px 0" }}>
-      {TRACKED.map(zoneId => {
-        const state = zones[zoneId];
+    <div>
+      {/* Column header */}
+      <div style={{
+        display: "flex", alignItems: "center",
+        padding: "3px 10px",
+        fontFamily: "'Share Tech Mono', monospace",
+        fontSize: 9, color: "#2C4060", letterSpacing: "0.1em",
+        borderBottom: "1px solid #0A1525",
+      }}>
+        <span style={{ width: 56 }}>ZONE</span>
+        <span style={{ width: 72, textAlign: "right" }}>DENSITY</span>
+        <span style={{ width: 38, textAlign: "right" }}>PRS</span>
+        <span style={{ flex: 1, textAlign: "center" }}>TREND</span>
+        <span style={{ width: 28, textAlign: "right" }}>STS</span>
+      </div>
+
+      {TRACKED.map(zid => {
+        const state = zones[zid];
         if (!state) return null;
         return (
           <ZoneRow
-            key={zoneId}
-            id={zoneId}
+            key={zid}
+            label={ZONE_META[zid]?.shortLabel ?? zid}
             state={state}
-            history={historyMap[zoneId] ?? []}
+            history={historyMap[zid] ?? []}
           />
         );
       })}
@@ -31,13 +46,12 @@ export default function ZoneChart({ zones, historyMap }: Props) {
   );
 }
 
-function ZoneRow({ id, state, history }: { id: string; state: ZoneState; history: number[] }) {
+function ZoneRow({ label, state, history }: { label: string; state: ZoneState; history: number[] }) {
   const color  = BORDER_MAP[state.color];
-  const label  = ZONE_META[id]?.shortLabel ?? id;
   const status = STATUS_LABEL[state.color] ?? "---";
   const isCrit = state.color === "critical";
 
-  const W = 72, H = 18;
+  const W = 76, H = 14;
   const max = Math.max(...history, 1);
   const pts = history.slice(-20).map((v, i, arr) => {
     const x = (i / Math.max(arr.length - 1, 1)) * W;
@@ -48,68 +62,34 @@ function ZoneRow({ id, state, history }: { id: string; state: ZoneState; history
   return (
     <div style={{
       display: "flex", alignItems: "center",
-      padding: "5px 12px",
-      borderBottom: "1px solid #21262D",
-      background: isCrit ? "rgba(220,38,38,0.08)" : "transparent",
-      gap: 10,
+      padding: "4px 10px",
+      borderBottom: "1px solid #0A1525",
+      background: isCrit ? "rgba(232,32,32,0.07)" : "transparent",
+      fontFamily: "'Share Tech Mono', monospace",
+      fontSize: 11,
     }}>
-      {/* Zone label */}
-      <span style={{
-        fontSize: 12, fontWeight: 600, color,
-        width: 72, flexShrink: 0,
-        overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
-      }}>
+      <span style={{ color, width: 56, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
         {label}
       </span>
-
-      {/* Density */}
-      <span style={{
-        fontSize: 13, fontWeight: 700, color,
-        width: 72, flexShrink: 0, textAlign: "right",
-        fontFamily: "JetBrains Mono, monospace",
-      }}>
-        {state.density.toFixed(2)}
+      <span style={{ color, width: 72, textAlign: "right", fontWeight: "bold" }}>
+        {state.density.toFixed(2)}/m²
       </span>
-
-      {/* Count */}
-      <span style={{
-        fontSize: 12, color: "#64748B",
-        width: 40, flexShrink: 0, textAlign: "right",
-      }}>
+      <span style={{ color: "#4A6A84", width: 38, textAlign: "right" }}>
         {state.count}
       </span>
-
-      {/* Sparkline */}
-      <div style={{ flex: 1, display: "flex", alignItems: "center" }}>
+      <div style={{ flex: 1, display: "flex", justifyContent: "center" }}>
         {history.length >= 2 ? (
-          <svg width={W} height={H} style={{ overflow: "visible", display: "block" }}>
-            <polyline
-              points={pts}
-              fill="none"
-              stroke={color}
-              strokeWidth={1.5}
-              opacity={0.7}
-            />
+          <svg width={W} height={H} style={{ overflow: "visible" }}>
+            <polyline points={pts} fill="none" stroke={color} strokeWidth={1.2} opacity={0.75} />
             {history.length > 0 && (
-              <circle
-                cx={W}
-                cy={H - (history[history.length - 1] / max) * H}
-                r={2}
-                fill={color}
-              />
+              <circle cx={W} cy={H - (history[history.length - 1] / max) * H} r={1.5} fill={color} />
             )}
           </svg>
         ) : (
-          <div style={{ fontSize: 11, color: "#334155" }}>—</div>
+          <span style={{ color: "#2C4060" }}>——</span>
         )}
       </div>
-
-      {/* Status badge */}
-      <span style={{
-        fontSize: 11, fontWeight: 700, color,
-        width: 32, flexShrink: 0, textAlign: "right",
-        letterSpacing: "0.04em",
-      }}>
+      <span style={{ color, width: 28, textAlign: "right", letterSpacing: "0.05em" }}>
         {status}
       </span>
     </div>

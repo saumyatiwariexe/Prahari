@@ -14,18 +14,19 @@ WEBSOCKET_INTERVAL_MS = 200
 SCENARIO_TICK_MS = 500
 
 ZONES = {
-    "CONC":   {"name": "Main Concourse",     "area_m2": 1200},
-    "GATE_A": {"name": "Gate A",             "area_m2": 60},
-    "GATE_B": {"name": "Gate B",             "area_m2": 60},
-    "GATE_C": {"name": "Gate C",             "area_m2": 60},
-    "FOB1":   {"name": "Foot Over Bridge 1", "area_m2": 80},
-    "FOB2":   {"name": "Foot Over Bridge 2", "area_m2": 80},
-    "P1":     {"name": "Platform 1",         "area_m2": 500},
-    "P2":     {"name": "Platform 2",         "area_m2": 500},
-    "P3":     {"name": "Platform 3",         "area_m2": 500},
-    "P4":     {"name": "Platform 4",         "area_m2": 500},
-    "P5":     {"name": "Platform 5",         "area_m2": 500},
-    "P6":     {"name": "Platform 6",         "area_m2": 500},
+    # New Delhi Railway Station (NDLS) — Feb 15 2025 incident layout
+    "CONC":   {"name": "Main Concourse (NDLS)",         "area_m2": 1200},
+    "GATE_A": {"name": "Ajmeri Gate Entry",              "area_m2": 60},
+    "GATE_B": {"name": "Paharganj Gate Entry",           "area_m2": 60},
+    "GATE_C": {"name": "FOB-1 Exit Corridor",            "area_m2": 60},
+    "FOB1":   {"name": "FOB-3 Stairway (Pf 14/15)",     "area_m2": 80},   # ← CRUSH LOCATION
+    "FOB2":   {"name": "FOB-2 Stairway (Pf 12/13)",     "area_m2": 80},
+    "P1":     {"name": "Platform 12 — Prayagraj Spl",   "area_m2": 500},  # original platform, crowd fled from here
+    "P2":     {"name": "Platform 13 — Swatantrata Exp", "area_m2": 500},  # delayed
+    "P3":     {"name": "Platform 14 — Prayagraj Exp",   "area_m2": 500},  # fed FOB-3 crush
+    "P4":     {"name": "Platform 15 — Rajdhani",        "area_m2": 500},  # delayed, blocked passage
+    "P5":     {"name": "Platform 16 — Prayagraj Spl",   "area_m2": 500},  # last-minute move destination
+    "P6":     {"name": "Platform 11",                   "area_m2": 500},
 }
 
 def density_color(density: float) -> str:
