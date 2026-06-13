@@ -50,8 +50,6 @@ connections:       list[WebSocket] = []
 _MAX_HIST = 30
 _density_hist: dict[str, list[float]] = {z: [] for z in ZONES}
 
-# Last-known zone states (used as fallback when video pipeline hasn't produced a new frame yet)
-_last_zone_states: dict | None = None
 
 
 def _update_hist(zone_states: dict):
@@ -59,6 +57,14 @@ def _update_hist(zone_states: dict):
         buf = _density_hist.get(zid, [])
         buf.append(state["density"])
         _density_hist[zid] = buf[-_MAX_HIST:]
+
+
+def _sync_log_statuses(engine):
+    """Propagate auto-confirmed L2 statuses back into the all_interventions log dicts."""
+    staged_ids = {entry["iv"].id for entry in engine._staged.values()}
+    for iv_dict in all_interventions:
+        if iv_dict["status"] == "staged" and iv_dict["id"] not in staged_ids:
+            iv_dict["status"] = "confirmed"
 
 
 # ── App setup ────────────────────────────────────────────────────────────────
@@ -143,7 +149,7 @@ async def live_start(source: str = "platform"):
     for buf in _density_hist.values():
         buf.clear()
 
-    pipeline = VideoPipeline(video_path, fps_target=5)
+    pipeline = VideoPipeline(video_path)  # fps_target auto: 5 (CUDA) or 2 (CPU SAHI)
     pipeline.start()
     mode = "video"
     return {"status": "started", "mode": "video", "source": source}
@@ -168,30 +174,35 @@ async def live_sources():
 @app.post("/intervention/{iv_id}/confirm")
 async def confirm(iv_id: str):
     ok = engine_cg.confirm(iv_id) or engine_human.confirm(iv_id)
+    if ok:
+        for iv_dict in all_interventions:
+            if iv_dict["id"] == iv_id:
+                iv_dict["status"] = "confirmed"
+                break
     return {"status": "confirmed" if ok else "not_found"}
 
 
 @app.post("/intervention/{iv_id}/cancel")
 async def cancel(iv_id: str):
     ok = engine_cg.cancel(iv_id) or engine_human.cancel(iv_id)
+    if ok:
+        for iv_dict in all_interventions:
+            if iv_dict["id"] == iv_id:
+                iv_dict["status"] = "cancelled"
+                break
     return {"status": "cancelled" if ok else "not_found"}
 
 
 # ── Broadcast loop ────────────────────────────────────────────────────────────
 async def broadcast_loop():
-    global _last_zone_states
-
     while True:
         await asyncio.sleep(WEBSOCKET_INTERVAL_MS / 1000)
 
         if mode == "video" and pipeline is not None:
-            # Real video: get latest YOLOv8 zone states
-            fresh = pipeline.get_states()
-            if fresh is not None:
-                _last_zone_states = fresh
-            zone_cg = _last_zone_states
+            # Real video: get latest YOLOv8 zone states (always the most recent frame)
+            zone_cg = pipeline.get_states()
             if zone_cg is None:
-                continue  # pipeline not warmed up yet
+                continue  # pipeline not warmed up yet (model still loading)
 
             zone_human = zone_cg   # no scripted human-side in live mode
             elapsed = pipeline.elapsed()
@@ -202,6 +213,7 @@ async def broadcast_loop():
             new_cg = engine_cg.evaluate(zone_cg, predictions)
             for iv in new_cg:
                 all_interventions.insert(0, {**iv.to_dict(), "side": "crowdguard"})
+            _sync_log_statuses(engine_cg)
 
             payload = {
                 "elapsed": round(elapsed, 1),
@@ -236,6 +248,7 @@ async def broadcast_loop():
                 all_interventions.insert(0, {**iv.to_dict(), "side": "crowdguard"})
             for iv in new_human:
                 all_interventions.insert(0, {**iv.to_dict(), "side": "human"})
+            _sync_log_statuses(engine_cg)
 
             payload = {
                 "elapsed": round(elapsed, 1),

@@ -1,19 +1,30 @@
 """
-Real-video pipeline: continuous YOLOv8 inference in a background thread.
-Results are put into a thread-safe queue consumed by the broadcast loop.
+Real-video pipeline: YOLOv8m inference via SAHI sliced detection.
+
+SAHI (Slicing Aided Hyper Inference) splits each frame into overlapping tiles
+before detection, then merges results. This dramatically improves accuracy in
+dense/occluded crowds where standard single-pass inference undercounts badly.
+
+Falls back to plain YOLOv8m (no slicing) if SAHI is not installed.
 """
 
 import threading
-import queue
 import time
 import cv2
 import numpy as np
 from ultralytics import YOLO
 from constants import density_color
 
+try:
+    import torch
+    from PIL import Image
+    from sahi import AutoDetectionModel
+    from sahi.predict import get_sliced_prediction
+    _SAHI = True
+except ImportError:
+    _SAHI = False
+
 # ── Zone layout for 640×480 video frame ───────────────────────────────────────
-# Each zone covers a pixel rectangle and carries a realistic m² estimate.
-# The frame is divided so detections map naturally to station layout zones.
 #
 #  y=0   ┌──────────────────────────────────────────┐
 #        │  CONC (top strip — concourse/entry area)  │
@@ -27,8 +38,6 @@ from constants import density_color
 #        │  P3 (far/background platform section)     │
 #  y=480 └───────────────────────────────────────────┘
 
-DENSITY_MULTIPLIER = 1.0  # raw count / zone area — no artificial inflation
-
 _ACTIVE_ZONES = [
     {"id": "CONC", "x1": 0,   "y1": 0,   "x2": 640, "y2": 120, "area_m2": 60.0},
     {"id": "FOB1", "x1": 0,   "y1": 120, "x2": 320, "y2": 210, "area_m2": 15.0},
@@ -38,7 +47,6 @@ _ACTIVE_ZONES = [
     {"id": "P3",   "x1": 0,   "y1": 390, "x2": 640, "y2": 480, "area_m2": 40.0},
 ]
 
-# Zones not directly visible in video — carry background safe values
 _PASSIVE_ZONES = ["GATE_A", "GATE_B", "GATE_C", "P4", "P5", "P6"]
 
 _ZONE_NAMES = {
@@ -62,20 +70,29 @@ def _make_state(zone_id: str, density: float, count: int) -> dict:
 
 class VideoPipeline:
     """
-    Runs YOLOv8n person detection on a looping video file in a daemon thread.
-    Call get_states() from the async broadcast loop to get the latest frame result.
+    Runs person detection on a looping video file in a daemon thread.
+
+    GPU (CUDA):  YOLOv8m + SAHI with 128px tiles → 5fps, ~30-50 detections in dense scenes
+    CPU (SAHI):  YOLOv8m + SAHI with 192px tiles → 2fps, ~15-25 detections
+    CPU (plain): YOLOv8m single-pass             → 5fps, ~5-15 detections
     """
 
-    def __init__(self, video_path: str, fps_target: int = 5):
+    def __init__(self, video_path: str, fps_target: int | None = None):
+        _cuda = _SAHI and torch.cuda.is_available()
+        if fps_target is None:
+            fps_target = 5 if _cuda else (2 if _SAHI else 5)
+        self._tile_size = 128 if _cuda else 192
         self.video_path = video_path
         self._fps_target = fps_target
-        self._queue: queue.Queue[dict] = queue.Queue(maxsize=3)
+        self._lock = threading.Lock()
+        self._latest_state: dict | None = None
+        self._frame_count = 0
         self._running = False
-        self._model: YOLO | None = None
         self._ema: dict[str, float] = {}
         self._thread: threading.Thread | None = None
-        self._elapsed = 0.0
         self._start_time = 0.0
+        self._detection_model = None
+        self._yolo_model: YOLO | None = None
 
     def start(self):
         self._running = True
@@ -90,23 +107,43 @@ class VideoPipeline:
         return time.monotonic() - self._start_time
 
     def get_states(self) -> dict | None:
-        """Non-blocking: return latest zone states or None if no new frame."""
-        try:
-            return self._queue.get_nowait()
-        except queue.Empty:
-            return None
+        with self._lock:
+            return self._latest_state
+
+    # ── Internal ──────────────────────────────────────────────────────────────
+
+    def _load_model(self):
+        if _SAHI:
+            device = "cuda:0" if torch.cuda.is_available() else "cpu"
+            print(f"[Prahari] Loading YOLOv8m + SAHI on {device}")
+            self._detection_model = AutoDetectionModel.from_pretrained(
+                model_type="ultralytics",
+                model_path="yolov8m.pt",
+                confidence_threshold=0.08,  # low: catch partially-visible people
+                device=device,
+            )
+        else:
+            print("[Prahari] SAHI not found — falling back to plain YOLOv8m")
+            self._yolo_model = YOLO("yolov8m.pt")
 
     def _run(self):
-        self._model = YOLO("yolov8n.pt")
+        try:
+            self._load_model()
+        except Exception as e:
+            print(f"[Prahari] Model load failed: {e}", flush=True)
+            return
 
         cap = cv2.VideoCapture(self.video_path)
         if not cap.isOpened():
+            print(f"[Prahari] Cannot open video: {self.video_path}", flush=True)
             return
 
         source_fps = cap.get(cv2.CAP_PROP_FPS) or 25.0
         skip = max(1, int(source_fps / self._fps_target))
         frame_idx = 0
         interval = 1.0 / self._fps_target
+
+        print(f"[Prahari] Pipeline running — {self._fps_target}fps target, skip={skip}, tile={self._tile_size}px", flush=True)
 
         while self._running:
             t0 = time.monotonic()
@@ -118,20 +155,70 @@ class VideoPipeline:
 
             if frame_idx % skip == 0:
                 frame = cv2.resize(frame, (640, 480))
-                states = self._infer(frame)
                 try:
-                    self._queue.put_nowait(states)
-                except queue.Full:
-                    pass  # consumer is lagging — drop frame
+                    states = self._infer(frame)
+                    with self._lock:
+                        self._latest_state = states
+                        self._frame_count += 1
+                    if self._frame_count % 20 == 1:
+                        total = sum(s["count"] for s in states.values())
+                        print(f"[Prahari] frame={self._frame_count} total_persons={total}", flush=True)
+                except Exception as e:
+                    print(f"[Prahari] Inference error frame {frame_idx}: {e}", flush=True)
 
             frame_idx += 1
             drift = time.monotonic() - t0
             time.sleep(max(0.0, interval - drift))
 
         cap.release()
+        print("[Prahari] Pipeline stopped.", flush=True)
 
     def _infer(self, frame: np.ndarray) -> dict:
-        results = self._model.track(frame, persist=True, classes=[0], verbose=False, conf=0.15, max_det=500)
+        if _SAHI and self._detection_model is not None:
+            return self._infer_sahi(frame)
+        return self._infer_yolo(frame)
+
+    def _infer_sahi(self, frame: np.ndarray) -> dict:
+        pil_frame = Image.fromarray(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
+
+        sz = self._tile_size
+        result = get_sliced_prediction(
+            pil_frame,
+            self._detection_model,
+            slice_height=sz,
+            slice_width=sz,
+            overlap_height_ratio=0.3,
+            overlap_width_ratio=0.3,
+            perform_standard_pred=True,
+            postprocess_type="GREEDYNMM",
+            postprocess_match_threshold=0.3,   # merge only highly-overlapping boxes
+            postprocess_match_metric="IOS",    # intersection/smaller area — right for dense crowds
+            verbose=0,
+        )
+
+        counts: dict[str, int] = {z["id"]: 0 for z in _ACTIVE_ZONES}
+        for obj in result.object_prediction_list:
+            if obj.category.name != "person":
+                continue
+            cx = (obj.bbox.minx + obj.bbox.maxx) / 2
+            cy = (obj.bbox.miny + obj.bbox.maxy) / 2
+            for z in _ACTIVE_ZONES:
+                if z["x1"] <= cx < z["x2"] and z["y1"] <= cy < z["y2"]:
+                    counts[z["id"]] += 1
+                    break
+
+        return self._counts_to_states(counts)
+
+    def _infer_yolo(self, frame: np.ndarray) -> dict:
+        results = self._yolo_model.track(
+            frame,
+            persist=True,
+            classes=[0],
+            verbose=False,
+            conf=0.1,
+            max_det=1000,
+            iou=0.3,       # lower IoU threshold keeps more overlapping boxes
+        )
 
         counts: dict[str, int] = {z["id"]: 0 for z in _ACTIVE_ZONES}
         if results and results[0].boxes is not None:
@@ -143,18 +230,20 @@ class VideoPipeline:
                         counts[z["id"]] += 1
                         break
 
-        states = {}
+        return self._counts_to_states(counts)
+
+    def _counts_to_states(self, counts: dict[str, int]) -> dict:
+        states: dict = {}
         EMA_ALPHA = 0.35
 
         for z in _ACTIVE_ZONES:
             zid = z["id"]
-            raw = counts[zid] * DENSITY_MULTIPLIER / z["area_m2"]
+            raw = counts[zid] / z["area_m2"]
             prev = self._ema.get(zid, raw)
             smooth = EMA_ALPHA * raw + (1 - EMA_ALPHA) * prev
             self._ema[zid] = smooth
             states[zid] = _make_state(zid, smooth, counts[zid])
 
-        # Passive zones: slight background noise
         for zid in _PASSIVE_ZONES:
             prev = self._ema.get(zid, 0.4)
             states[zid] = _make_state(zid, prev, 0)

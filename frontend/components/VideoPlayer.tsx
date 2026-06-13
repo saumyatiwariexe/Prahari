@@ -11,6 +11,7 @@ export default function VideoPlayer({ critical, videoSrc = "/videos/platform.web
   const videoRef = useRef<HTMLVideoElement>(null);
   const [hasVideo, setHasVideo] = useState(false);
   const [expanded, setExpanded] = useState(false);
+  const [hidden, setHidden] = useState(false);
 
   useEffect(() => {
     const v = videoRef.current;
@@ -31,12 +32,27 @@ export default function VideoPlayer({ critical, videoSrc = "/videos/platform.web
     videoRef.current.playbackRate = critical ? 1.4 : 1.0;
   }, [critical, hasVideo]);
 
+  if (hidden) {
+    return (
+      <button
+        onClick={() => setHidden(false)}
+        className="fixed bottom-4 left-4 z-40"
+        style={{
+          height: 28, padding: "0 12px", fontSize: 12, fontWeight: 500,
+          background: "#161B22", color: "#64748B",
+          border: "1px solid #21262D", borderRadius: 6, cursor: "pointer",
+        }}
+      >
+        Show CCTV
+      </button>
+    );
+  }
+
   return (
     <motion.div
-      className="fixed bottom-4 left-4 z-40 cursor-pointer"
+      className="fixed bottom-4 left-4 z-40"
       animate={{ width: expanded ? 320 : 208 }}
       transition={{ type: "spring", stiffness: 160, damping: 20 }}
-      onClick={() => setExpanded((e) => !e)}
     >
       <div
         className="relative rounded-xl overflow-hidden bg-[#0d1117] shadow-2xl"
@@ -63,13 +79,21 @@ export default function VideoPlayer({ critical, videoSrc = "/videos/platform.web
           <span className="text-[10px] text-slate-400 font-mono">LIVE CCTV · FOB-3</span>
           {critical && (
             <motion.span
-              className="ml-auto text-[9px] font-bold text-red-400"
+              className="text-[9px] font-bold text-red-400"
               animate={{ opacity: [1, 0.3, 1] }}
               transition={{ duration: 0.5, repeat: Infinity }}
             >
               ⚠ HIGH DENSITY
             </motion.span>
           )}
+          <button
+            onClick={() => setHidden(true)}
+            className="ml-auto text-slate-600 hover:text-slate-400 text-[11px] leading-none"
+            style={{ background: "none", border: "none", cursor: "pointer", padding: "2px 4px" }}
+            title="Hide CCTV"
+          >
+            ✕
+          </button>
         </div>
 
         {/* Video or crowd simulation */}
@@ -112,8 +136,11 @@ export default function VideoPlayer({ critical, videoSrc = "/videos/platform.web
         </div>
 
         {/* Footer */}
-        <div className="px-2 py-1 bg-black/30 flex items-center justify-between">
-          <span className="text-[9px] text-slate-500">{expanded ? "Click to collapse" : "Click to expand"}</span>
+        <div
+          className="px-2 py-1 bg-black/30 flex items-center justify-between cursor-pointer"
+          onClick={() => setExpanded((e) => !e)}
+        >
+          <span className="text-[9px] text-slate-500">{expanded ? "Collapse" : "Expand"}</span>
           <span className="text-[9px] text-slate-600">PIP</span>
         </div>
       </div>

@@ -3,74 +3,111 @@ import { motion, AnimatePresence } from "framer-motion";
 import type { LiveUpdate } from "@/lib/types";
 import StationMap from "./StationMap";
 
-interface Props {
-  data: LiveUpdate | null;
-}
+interface Props { data: LiveUpdate | null }
 
 export default function SplitScreen({ data }: Props) {
   if (!data) {
     return (
-      <div className="flex h-full items-center justify-center text-slate-500 text-sm">
-        Connecting to scenario...
+      <div style={{
+        color: "#475569", fontSize: 14,
+        display: "flex", alignItems: "center", justifyContent: "center", height: "100%",
+      }}>
+        Waiting for scenario data…
       </div>
     );
   }
 
-  const elapsed = data.elapsed;
-  const cgL1Fired = data.crowdguard.l1_fired;
+  const { elapsed } = data;
+  const cgL1Fired    = data.crowdguard.l1_fired;
   const crushOccurred = data.human.crush_occurred;
   const humanResponded = data.human.human_responded;
 
-  const cgResponseSec = cgL1Fired ? 2.3 : null;
-  const humanResponseSec = humanResponded ? 252 : null;
-
   return (
-    <div className="flex flex-col h-full gap-2">
-      {/* Panels */}
-      <div className="grid grid-cols-2 gap-3 flex-1 min-h-0">
-        {/* Left — Human Operated */}
-        <div className="flex flex-col rounded-xl border border-border bg-surface overflow-hidden relative">
-          <div className="flex items-center gap-2 px-3 py-2 border-b border-border bg-[#1a0a0a]">
-            <span className="w-2 h-2 rounded-full bg-red-500" />
-            <span className="text-xs font-semibold text-red-400">HUMAN-OPERATED STATION</span>
-            <span className="ml-auto text-xs text-slate-500">Current system</span>
+    <div style={{ display: "flex", flexDirection: "column", height: "100%", gap: 8 }}>
+
+      {/* ── Panels ── */}
+      <div style={{ flex: 1, minHeight: 0, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+
+        {/* Left: Human-operated */}
+        <div style={{
+          display: "flex", flexDirection: "column",
+          background: "#0D1117",
+          border: `1px solid ${crushOccurred ? "#EF4444" : "#21262D"}`,
+          borderRadius: 8,
+          overflow: "hidden", position: "relative",
+        }}>
+          <div style={{
+            display: "flex", alignItems: "center", gap: 8,
+            padding: "10px 14px", borderBottom: "1px solid #21262D",
+            background: "#161B22", flexShrink: 0,
+          }}>
+            <motion.div
+              animate={{ opacity: [1, 0.3, 1] }}
+              transition={{ duration: 0.9, repeat: Infinity }}
+              style={{ width: 8, height: 8, borderRadius: "50%", background: "#EF4444" }}
+            />
+            <span style={{ fontSize: 13, fontWeight: 700, color: "#EF4444" }}>
+              Human-Operated
+            </span>
+            <span style={{ fontSize: 12, color: "#475569", marginLeft: "auto" }}>
+              Current System
+            </span>
           </div>
-          <div className="flex-1 p-2 relative">
+
+          <div style={{ flex: 1, padding: 10, position: "relative", minHeight: 0 }}>
             <StationMap zones={data.human.zones} compact />
 
-            {/* Awaiting operator overlay */}
+            {/* Awaiting operator */}
             {!crushOccurred && !humanResponded && elapsed > 30 && (
-              <div className="absolute inset-0 flex items-end justify-center pb-6 pointer-events-none">
+              <div style={{
+                position: "absolute", bottom: 16, left: 0, right: 0,
+                display: "flex", justifyContent: "center", pointerEvents: "none",
+              }}>
                 <motion.div
-                  animate={{ opacity: [0.6, 1, 0.6] }}
+                  animate={{ opacity: [0.5, 1, 0.5] }}
                   transition={{ duration: 1.5, repeat: Infinity }}
-                  className="bg-slate-900/80 border border-slate-600 rounded-lg px-3 py-1.5 text-xs text-slate-400"
+                  style={{
+                    background: "#161B22", border: "1px solid #21262D",
+                    padding: "6px 14px", borderRadius: 6,
+                    fontSize: 12, color: "#64748B",
+                  }}
                 >
-                  ⏳ Awaiting operator response...
+                  Awaiting operator response…
                 </motion.div>
               </div>
             )}
 
-            {/* CRUSH alert */}
+            {/* CRUSH EVENT overlay */}
             <AnimatePresence>
               {crushOccurred && (
                 <motion.div
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
-                  className="absolute inset-0 flex items-center justify-center"
-                  style={{ background: "rgba(127,0,0,0.55)" }}
+                  style={{
+                    position: "absolute", inset: 0,
+                    background: "rgba(180,0,0,0.5)",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    borderRadius: 6,
+                  }}
                 >
                   <motion.div
-                    animate={{ scale: [1, 1.04, 1] }}
+                    animate={{ scale: [1, 1.03, 1] }}
                     transition={{ duration: 0.6, repeat: Infinity }}
-                    className="text-center"
+                    style={{ textAlign: "center" }}
                   >
-                    <div className="text-4xl mb-2">⚠️</div>
-                    <div className="text-red-300 font-bold text-lg">CRUSH EVENT</div>
-                    <div className="text-red-400 text-xs mt-1">FOB-1 density: critical</div>
+                    <div style={{ fontSize: 40, marginBottom: 8 }}>⚠</div>
+                    <div style={{ color: "#FF4040", fontSize: 22, fontWeight: 800, letterSpacing: "0.05em" }}>
+                      CRUSH EVENT
+                    </div>
+                    <div style={{ color: "#E87070", fontSize: 13, marginTop: 6 }}>
+                      FOB-1 density critical — response delayed
+                    </div>
                     {humanResponded && (
-                      <div className="text-slate-300 text-xs mt-3 border-t border-red-800 pt-2">
-                        Operator responded at 4m 12s — too late
+                      <div style={{
+                        color: "#9A5050", fontSize: 12, marginTop: 12,
+                        borderTop: "1px solid #5A1010", paddingTop: 10,
+                      }}>
+                        Operator responded at 4m 12s — Too late
                       </div>
                     )}
                   </motion.div>
@@ -80,44 +117,75 @@ export default function SplitScreen({ data }: Props) {
           </div>
         </div>
 
-        {/* Right — CrowdGuard */}
-        <div className="flex flex-col rounded-xl border border-green-900/60 bg-surface overflow-hidden relative">
-          <div className="flex items-center gap-2 px-3 py-2 border-b border-green-900/60 bg-[#0a1a0a]">
-            <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
-            <span className="text-xs font-semibold text-green-400">PRAHARI — AUTONOMOUS</span>
-            <span className="ml-auto text-xs text-slate-500">Simulation</span>
+        {/* Right: Prahari autonomous */}
+        <div style={{
+          display: "flex", flexDirection: "column",
+          background: "#0D1117",
+          border: `1px solid ${cgL1Fired ? "#22C55E" : "#21262D"}`,
+          borderRadius: 8,
+          overflow: "hidden", position: "relative",
+        }}>
+          <div style={{
+            display: "flex", alignItems: "center", gap: 8,
+            padding: "10px 14px", borderBottom: "1px solid #21262D",
+            background: "#161B22", flexShrink: 0,
+          }}>
+            <motion.div
+              animate={{ opacity: [1, 0.4, 1] }}
+              transition={{ duration: 1.2, repeat: Infinity }}
+              style={{ width: 8, height: 8, borderRadius: "50%", background: "#22C55E" }}
+            />
+            <span style={{ fontSize: 13, fontWeight: 700, color: "#22C55E" }}>
+              Prahari — Autonomous
+            </span>
+            <span style={{ fontSize: 12, color: "#475569", marginLeft: "auto" }}>
+              AI-Operated
+            </span>
           </div>
-          <div className="flex-1 p-2 relative">
-            <StationMap zones={data.crowdguard.zones}
+
+          <div style={{ flex: 1, padding: 10, position: "relative", minHeight: 0 }}>
+            <StationMap
+              zones={data.crowdguard.zones}
               predictions={data.crowdguard.predictions}
-              showPredictions compact />
+              showPredictions compact
+            />
 
             {/* L1 fired badge */}
             <AnimatePresence>
               {cgL1Fired && (
                 <motion.div
-                  initial={{ opacity: 0, y: 10 }}
+                  initial={{ opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="absolute bottom-4 left-0 right-0 flex justify-center"
+                  style={{
+                    position: "absolute", bottom: 12, left: 0, right: 0,
+                    display: "flex", justifyContent: "center",
+                  }}
                 >
-                  <div className="bg-green-950 border border-green-600 rounded-lg px-3 py-1.5 text-xs text-green-300 font-mono">
-                    ✅ L1 FIRED · PA-01 Issued · {cgResponseSec?.toFixed(1)}s response
+                  <div style={{
+                    background: "rgba(34,197,94,0.1)", border: "1px solid #22C55E",
+                    padding: "6px 16px", borderRadius: 6,
+                    fontSize: 13, fontWeight: 600, color: "#22C55E",
+                  }}>
+                    L1 fired · PA-01 issued · 2.3s response
                   </div>
                 </motion.div>
               )}
             </AnimatePresence>
 
-            {/* Averted */}
+            {/* Incident averted */}
             <AnimatePresence>
               {cgL1Fired && elapsed > 150 && (
                 <motion.div
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
-                  className="absolute top-3 right-3"
+                  style={{
+                    position: "absolute", top: 10, right: 10,
+                    background: "rgba(34,197,94,0.1)", border: "1px solid #22C55E",
+                    padding: "4px 10px", borderRadius: 4,
+                    fontSize: 12, fontWeight: 600, color: "#22C55E",
+                  }}
                 >
-                  <div className="bg-green-900/80 border border-green-500 rounded-lg px-2 py-1 text-xs text-green-300 font-semibold">
-                    INCIDENT AVERTED
-                  </div>
+                  Incident Averted
                 </motion.div>
               )}
             </AnimatePresence>
@@ -125,38 +193,52 @@ export default function SplitScreen({ data }: Props) {
         </div>
       </div>
 
-      {/* Bottom comparison bar */}
-      <div className="grid grid-cols-2 gap-3">
-        <StatBar
+      {/* ── Comparison bar ── */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, flexShrink: 0 }}>
+        <StatCard
           label="Human Response Time"
-          value={humanResponded ? "4 min 12 sec" : "—"}
-          outcome={crushOccurred ? "CRUSH OCCURRED" : "Monitoring..."}
-          outcomeColor={crushOccurred ? "text-red-400" : "text-slate-500"}
-          valueColor="text-red-400"
+          value={humanResponded ? "4m 12s" : "——"}
+          outcome={crushOccurred ? "Crush Occurred" : "Monitoring…"}
+          valueColor="#EF4444"
+          outcomeOk={!crushOccurred}
         />
-        <StatBar
+        <StatCard
           label="Prahari Response"
-          value={cgL1Fired ? "2.3 seconds" : "—"}
-          outcome={cgL1Fired && elapsed > 150 ? "CRUSH PREVENTED" : "Active monitoring"}
-          outcomeColor={cgL1Fired && elapsed > 150 ? "text-green-400" : "text-slate-400"}
-          valueColor="text-green-400"
+          value={cgL1Fired ? "2.3s" : "——"}
+          outcome={cgL1Fired && elapsed > 150 ? "Crush Prevented" : "Monitoring…"}
+          valueColor="#22C55E"
+          outcomeOk={cgL1Fired && elapsed > 150}
         />
       </div>
     </div>
   );
 }
 
-function StatBar({ label, value, outcome, outcomeColor, valueColor }: {
+function StatCard({ label, value, outcome, valueColor, outcomeOk }: {
   label: string; value: string; outcome: string;
-  outcomeColor: string; valueColor: string;
+  valueColor: string; outcomeOk: boolean;
 }) {
   return (
-    <div className="rounded-lg border border-border bg-surface px-4 py-2 flex items-center justify-between">
+    <div style={{
+      background: "#161B22", border: "1px solid #21262D",
+      borderRadius: 8, padding: "12px 16px",
+      display: "flex", alignItems: "center", justifyContent: "space-between",
+    }}>
       <div>
-        <div className="text-xs text-slate-500">{label}</div>
-        <div className={`text-lg font-bold font-mono ${valueColor}`}>{value}</div>
+        <div style={{ fontSize: 12, color: "#64748B", marginBottom: 4 }}>{label}</div>
+        <div style={{
+          fontSize: 24, fontWeight: 800, color: valueColor,
+          fontFamily: "JetBrains Mono, monospace",
+        }}>
+          {value}
+        </div>
       </div>
-      <div className={`text-sm font-semibold ${outcomeColor}`}>{outcome}</div>
+      <div style={{
+        fontSize: 13, fontWeight: 600,
+        color: outcomeOk ? "#22C55E" : value === "——" ? "#475569" : "#EF4444",
+      }}>
+        {outcome}
+      </div>
     </div>
   );
 }
