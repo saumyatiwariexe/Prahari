@@ -28,19 +28,27 @@ export default function StationMap({ zones, predictions, showPredictions, compac
         pred={showPredictions ? predictions?.["CONC"] : undefined}
       />
 
-      {/* ── FOB + Gate row ── */}
+      {/* ── Gates row ── */}
       {!compact && (
-        <div className="grid grid-cols-4 gap-2">
+        <div className="grid grid-cols-3 gap-2">
+          <ZoneCard id="GATE_B" state={zones["GATE_B"]} small
+            gateState={gateStates["GATE_B"]} />
           <ZoneCard id="GATE_A" state={zones["GATE_A"]} small
             gateState={gateStates["GATE_A"]} />
-          <ZoneCard id="FOB1"   state={zones["FOB1"]}
-            pred={showPredictions ? predictions?.["FOB1"] : undefined}
-            escLabel={esc1Reversed ? "↓ Exit Only" : undefined} />
-          <ZoneCard id="FOB2"   state={zones["FOB2"]}
-            pred={showPredictions ? predictions?.["FOB2"] : undefined}
-            escLabel={esc2Reversed ? "↓ Exit Only" : undefined} />
           <ZoneCard id="GATE_C" state={zones["GATE_C"]} small
             gateState={gateStates["GATE_C"]} />
+        </div>
+      )}
+
+      {/* ── FOB row ── */}
+      {!compact && (
+        <div className="grid grid-cols-2 gap-2">
+          <ZoneCard id="FOB1" state={zones["FOB1"]}
+            pred={showPredictions ? predictions?.["FOB1"] : undefined}
+            escLabel={esc1Reversed ? "↓ Exit Only" : undefined} />
+          <ZoneCard id="FOB2" state={zones["FOB2"]}
+            pred={showPredictions ? predictions?.["FOB2"] : undefined}
+            escLabel={esc2Reversed ? "↓ Exit Only" : undefined} />
         </div>
       )}
 
@@ -123,10 +131,10 @@ function ZoneCard({ id, state, pred, small, gateState, escLabel }: {
           )}
         </div>
 
-        <div style={{ textAlign: "right" }}>
+        <div style={{ textAlign: "right", minWidth: 0 }}>
           {state && !small && (
-            <div style={{ fontSize: 13, color: "#94A3B8" }}>
-              {state.count} <span style={{ fontSize: 11, color: "#475569" }}>persons</span>
+            <div style={{ fontSize: 12, color: "#94A3B8", whiteSpace: "nowrap" }}>
+              {state.count.toLocaleString()} <span style={{ fontSize: 10, color: "#475569" }}>prs</span>
             </div>
           )}
           {escLabel && (
@@ -203,23 +211,23 @@ function PlatformRow({ id, state, pred }: {
     >
       {/* Zone label */}
       <div style={{
-        fontSize: 12, fontWeight: 600, color: "#64748B",
-        textTransform: "uppercase", letterSpacing: "0.06em",
-        width: 76, flexShrink: 0,
+        fontSize: 11, fontWeight: 600, color: "#64748B",
+        textTransform: "uppercase", letterSpacing: "0.05em",
+        width: 52, flexShrink: 0,
       }}>
         {ZONE_META[id]?.shortLabel ?? id}
       </div>
 
       {/* Density value */}
-      <div style={{ fontSize: 20, fontWeight: 800, color: accent, width: 80, flexShrink: 0 }}>
+      <div style={{ fontSize: 18, fontWeight: 800, color: accent, width: 72, flexShrink: 0 }}>
         {density.toFixed(2)}
-        <span style={{ fontSize: 11, color: "#475569", fontWeight: 400 }}>/m²</span>
+        <span style={{ fontSize: 10, color: "#475569", fontWeight: 400 }}>/m²</span>
       </div>
 
       {/* Count */}
       {state && (
-        <div style={{ fontSize: 13, color: "#94A3B8", width: 80, flexShrink: 0 }}>
-          {state.count} <span style={{ color: "#475569", fontSize: 11 }}>prs</span>
+        <div style={{ fontSize: 12, color: "#94A3B8", width: 64, flexShrink: 0 }}>
+          {state.count} <span style={{ color: "#475569", fontSize: 10 }}>prs</span>
         </div>
       )}
 
