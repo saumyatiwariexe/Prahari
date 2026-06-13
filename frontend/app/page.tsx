@@ -275,7 +275,7 @@ export default function Home() {
           {view === "dashboard" ? (
             <motion.div key="dashboard"
               initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-              style={{ flex: 1, display: "grid", gridTemplateColumns: "1fr 270px", gap: 6 }}>
+              style={{ flex: 1, minHeight: 0, height: "100%", display: "grid", gridTemplateColumns: "1fr 270px", gap: 6 }}>
 
               {/* Left column */}
               <div style={{ display: "flex", flexDirection: "column", gap: 6, minHeight: 0 }}>
@@ -283,14 +283,14 @@ export default function Home() {
                 {liveMode === "scenario" ? (
                   <>
                     {/* Station map panel */}
-                    <div className="panel" style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column", overflow: "hidden", position: "relative" }}>
+                    <div className="panel" style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column", position: "relative" }}>
                       <div className="panel-header" style={{ display: "flex", alignItems: "center" }}>
                         <span>▌ NEW DELHI RAILWAY STATION — NDLS · FEB 15 2025</span>
                         {data?.crowdguard?.predictions && (
                           <span style={{ marginLeft: "auto", color: "#1A3A58" }}>⟳ +90s FORECAST</span>
                         )}
                       </div>
-                      <div style={{ flex: 1, minHeight: 0, padding: 6 }}>
+                      <div className="scrollbar-thin" style={{ flex: 1, minHeight: 0, padding: 6, overflowY: "auto" }}>
                         <StationMap
                           zones={zones}
                           predictions={data?.crowdguard?.predictions}
@@ -404,7 +404,7 @@ export default function Home() {
           ) : (
             <motion.div key="split"
               initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-              style={{ flex: 1 }}>
+              style={{ flex: 1, minHeight: 0, height: "100%" }}>
               <SplitScreen data={data} />
             </motion.div>
           )}

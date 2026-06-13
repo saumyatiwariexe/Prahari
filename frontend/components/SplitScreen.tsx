@@ -32,7 +32,7 @@ export default function SplitScreen({ data }: Props) {
           display: "flex", flexDirection: "column",
           background: "#080C14",
           border: `1px solid ${crushOccurred ? "#E82020" : "#142035"}`,
-          overflow: "hidden", position: "relative",
+          position: "relative",
         }}>
           <div style={{
             ...M,
@@ -51,7 +51,7 @@ export default function SplitScreen({ data }: Props) {
             <span style={{ fontSize: 10, color: "#2C4060", marginLeft: "auto" }}>CURRENT SYSTEM</span>
           </div>
 
-          <div style={{ flex: 1, padding: 6, position: "relative", minHeight: 0 }}>
+          <div className="scrollbar-thin" style={{ flex: 1, padding: 6, position: "relative", minHeight: 0, overflowY: "auto" }}>
             <StationMap zones={data.human.zones} compact />
 
             {!crushOccurred && !humanResponded && elapsed > 30 && (
@@ -88,12 +88,15 @@ export default function SplitScreen({ data }: Props) {
                       CRUSH EVENT
                     </div>
                     <div style={{ color: "#E87070", fontSize: 11, marginTop: 4, letterSpacing: "0.1em" }}>
-                      FOB-1 DENSITY CRITICAL — RESPONSE DELAYED
+                      FOB-3 STAIRWAY (PF 14/15) — 18 DEAD · 15 INJURED
+                    </div>
+                    <div style={{ color: "#994040", fontSize: 10, marginTop: 6, letterSpacing: "0.08em" }}>
+                      NDLS · FEB 15 2025 · 20:48 IST
                     </div>
                     {humanResponded && (
                       <div style={{ color: "#8A4040", fontSize: 10, marginTop: 10,
                         borderTop: "1px solid #5A1010", paddingTop: 8, letterSpacing: "0.08em" }}>
-                        OPERATOR RESPONDED AT 4m 12s — TOO LATE
+                        FIRE TENDERS ARRIVED +112 MIN AFTER INCIDENT
                       </div>
                     )}
                   </motion.div>
@@ -108,7 +111,7 @@ export default function SplitScreen({ data }: Props) {
           display: "flex", flexDirection: "column",
           background: "#080C14",
           border: `1px solid ${cgL1Fired ? "#00C84C" : "#142035"}`,
-          overflow: "hidden", position: "relative",
+          position: "relative",
         }}>
           <div style={{
             ...M,
@@ -127,7 +130,7 @@ export default function SplitScreen({ data }: Props) {
             <span style={{ fontSize: 10, color: "#2C4060", marginLeft: "auto" }}>AI-OPERATED</span>
           </div>
 
-          <div style={{ flex: 1, padding: 6, position: "relative", minHeight: 0 }}>
+          <div className="scrollbar-thin" style={{ flex: 1, padding: 6, position: "relative", minHeight: 0, overflowY: "auto" }}>
             <StationMap
               zones={data.crowdguard.zones}
               predictions={data.crowdguard.predictions}
@@ -145,7 +148,7 @@ export default function SplitScreen({ data }: Props) {
                     background: "#001A08", border: "1px solid #00C84C",
                     padding: "4px 14px", fontSize: 10, color: "#00C84C", letterSpacing: "0.12em",
                   }}>
-                    ✓ L1 FIRED · PA-01 ISSUED · 2.3s RESPONSE
+                    ✓ L1 ALERT · FOB-3 SEALED · CROWD DIVERTED
                   </div>
                 </motion.div>
               )}

@@ -17,50 +17,53 @@ interface Props {
 const PLATFORMS = ["P1", "P2", "P3", "P4", "P5", "P6"];
 
 export default function StationMap({ zones, predictions, showPredictions, compact, gateStates = {}, esc1Reversed, esc2Reversed }: Props) {
-  const platforms = compact ? PLATFORMS.slice(0, 3) : PLATFORMS;
+  const platforms = compact ? PLATFORMS.slice(0, 5) : PLATFORMS;
 
   return (
-    <div className="flex flex-col gap-2 h-full w-full">
-      {/* ── CONCOURSE ── */}
+    // Natural height — parent container handles scroll
+    <div style={{ display: "flex", flexDirection: "column", gap: 6, width: "100%" }}>
+
+      {/* ── CONCOURSE ── always full width */}
       <ZoneCard
         id="CONC"
         state={zones["CONC"]}
         pred={showPredictions ? predictions?.["CONC"] : undefined}
+        small={compact}
       />
 
-      {/* ── Gates row ── */}
+      {/* ── Full layout: Gates row + FOB row ── */}
       {!compact && (
-        <div className="grid grid-cols-3 gap-2">
-          <ZoneCard id="GATE_B" state={zones["GATE_B"]} small
-            gateState={gateStates["GATE_B"]} />
-          <ZoneCard id="GATE_A" state={zones["GATE_A"]} small
-            gateState={gateStates["GATE_A"]} />
-          <ZoneCard id="GATE_C" state={zones["GATE_C"]} small
-            gateState={gateStates["GATE_C"]} />
-        </div>
+        <>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 6 }}>
+            <ZoneCard id="GATE_B" state={zones["GATE_B"]} small gateState={gateStates["GATE_B"]} />
+            <ZoneCard id="GATE_A" state={zones["GATE_A"]} small gateState={gateStates["GATE_A"]} />
+            <ZoneCard id="GATE_C" state={zones["GATE_C"]} small gateState={gateStates["GATE_C"]} />
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
+            <ZoneCard id="FOB1" state={zones["FOB1"]}
+              pred={showPredictions ? predictions?.["FOB1"] : undefined}
+              escLabel={esc1Reversed ? "↓ Exit Only" : undefined} />
+            <ZoneCard id="FOB2" state={zones["FOB2"]}
+              pred={showPredictions ? predictions?.["FOB2"] : undefined}
+              escLabel={esc2Reversed ? "↓ Exit Only" : undefined} />
+          </div>
+        </>
       )}
 
-      {/* ── FOB row ── */}
-      {!compact && (
-        <div className="grid grid-cols-2 gap-2">
-          <ZoneCard id="FOB1" state={zones["FOB1"]}
-            pred={showPredictions ? predictions?.["FOB1"] : undefined}
-            escLabel={esc1Reversed ? "↓ Exit Only" : undefined} />
-          <ZoneCard id="FOB2" state={zones["FOB2"]}
-            pred={showPredictions ? predictions?.["FOB2"] : undefined}
-            escLabel={esc2Reversed ? "↓ Exit Only" : undefined} />
-        </div>
-      )}
-
+      {/* ── Compact layout: GATE_B + FOBs ── */}
       {compact && (
-        <div className="grid grid-cols-2 gap-2">
-          <ZoneCard id="FOB1" state={zones["FOB1"]} />
-          <ZoneCard id="FOB2" state={zones["FOB2"]} />
-        </div>
+        <>
+          <ZoneCard id="GATE_B" state={zones["GATE_B"]} small gateState={gateStates["GATE_B"]} />
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
+            <ZoneCard id="FOB1" state={zones["FOB1"]} small
+              pred={showPredictions ? predictions?.["FOB1"] : undefined} />
+            <ZoneCard id="FOB2" state={zones["FOB2"]} small />
+          </div>
+        </>
       )}
 
       {/* ── Platforms ── */}
-      <div className="flex flex-col gap-1.5 flex-1">
+      <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
         {platforms.map(id => (
           <PlatformRow
             key={id} id={id}
@@ -73,14 +76,10 @@ export default function StationMap({ zones, predictions, showPredictions, compac
   );
 }
 
-// ── Zone card (box style — for CONC, FOBs, Gates) ─────────────────────────────
+// ── Zone card ─────────────────────────────────────────────────────────────────
 function ZoneCard({ id, state, pred, small, gateState, escLabel }: {
-  id: string;
-  state?: ZoneState;
-  pred?: ZonePrediction;
-  small?: boolean;
-  gateState?: GateState;
-  escLabel?: string;
+  id: string; state?: ZoneState; pred?: ZonePrediction;
+  small?: boolean; gateState?: GateState; escLabel?: string;
 }) {
   const color   = state?.color ?? "green";
   const accent  = BORDER_MAP[color];
@@ -96,83 +95,59 @@ function ZoneCard({ id, state, pred, small, gateState, escLabel }: {
         border: `1px solid ${isCrit ? accent : "#21262D"}`,
         borderLeft: `3px solid ${accent}`,
         borderRadius: 6,
-        padding: small ? "8px 10px" : "10px 14px",
+        padding: small ? "7px 10px" : "10px 14px",
         position: "relative",
         overflow: "hidden",
       }}
       animate={isCrit ? { borderColor: [accent, "#21262D", accent] } : {}}
       transition={{ duration: 0.8, repeat: Infinity }}
     >
-      {/* Top row: label + density */}
-      <div className="flex items-start justify-between gap-2">
-        <div>
+      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8 }}>
+        <div style={{ minWidth: 0 }}>
           <div style={{
-            fontSize: small ? 11 : 12,
-            fontWeight: 600,
-            color: "#64748B",
-            textTransform: "uppercase",
-            letterSpacing: "0.06em",
-            marginBottom: 2,
+            fontSize: 10, fontWeight: 600, color: "#64748B",
+            textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 2,
+            overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
           }}>
             {ZONE_META[id]?.shortLabel ?? id}
           </div>
-          {!small && state && (
-            <div style={{ fontSize: 28, fontWeight: 800, color: accent, lineHeight: 1 }}>
+          {state && (
+            <div style={{ fontSize: small ? 14 : 24, fontWeight: 800, color: accent, lineHeight: 1 }}>
               {density.toFixed(1)}
-              <span style={{ fontSize: 13, fontWeight: 500, color: "#475569", marginLeft: 2 }}>
-                /m²
-              </span>
-            </div>
-          )}
-          {small && state && (
-            <div style={{ fontSize: 16, fontWeight: 700, color: accent }}>
-              {density.toFixed(1)}/m²
+              <span style={{ fontSize: 10, fontWeight: 500, color: "#475569", marginLeft: 2 }}>/m²</span>
             </div>
           )}
         </div>
 
-        <div style={{ textAlign: "right", minWidth: 0 }}>
+        <div style={{ textAlign: "right", flexShrink: 0 }}>
           {state && !small && (
-            <div style={{ fontSize: 12, color: "#94A3B8", whiteSpace: "nowrap" }}>
-              {state.count.toLocaleString()} <span style={{ fontSize: 10, color: "#475569" }}>prs</span>
+            <div style={{ fontSize: 11, color: "#94A3B8" }}>
+              {state.count.toLocaleString()}
+              <span style={{ fontSize: 10, color: "#475569", marginLeft: 3 }}>prs</span>
             </div>
           )}
           {escLabel && (
-            <div style={{
-              fontSize: 11, color: "#F59E0B",
-              background: "rgba(245,158,11,0.1)",
-              padding: "1px 6px", borderRadius: 3, marginTop: 4,
-            }}>
+            <div style={{ fontSize: 10, color: "#F59E0B", background: "rgba(245,158,11,0.1)", padding: "1px 5px", borderRadius: 3, marginTop: 2 }}>
               {escLabel}
             </div>
           )}
           {gateState && gateState !== "open" && (
-            <div style={{
-              fontSize: 11,
-              color: gateState === "closed" ? "#EF4444" : "#F59E0B",
-              fontWeight: 600,
-            }}>
+            <div style={{ fontSize: 10, color: gateState === "closed" ? "#EF4444" : "#F59E0B", fontWeight: 600 }}>
               {gateState.toUpperCase()}
             </div>
           )}
-          {/* t+90 prediction */}
           {pred && (
-            <div style={{ fontSize: 11, color: BORDER_MAP[pred.t90.color], marginTop: 4 }}>
+            <div style={{ fontSize: 10, color: BORDER_MAP[pred.t90.color], marginTop: 2 }}>
               +90s: {pred.t90.density.toFixed(1)}
             </div>
           )}
         </div>
       </div>
 
-      {/* Density bar */}
       {!small && (
-        <div style={{
-          height: 4, background: "#21262D",
-          borderRadius: 2, marginTop: 8, overflow: "hidden",
-        }}>
+        <div style={{ height: 3, background: "#21262D", borderRadius: 2, marginTop: 7, overflow: "hidden" }}>
           <motion.div
             style={{ height: "100%", background: accent, borderRadius: 2 }}
-            initial={{ width: 0 }}
             animate={{ width: `${pct}%` }}
             transition={{ duration: 0.4 }}
           />
@@ -182,10 +157,8 @@ function ZoneCard({ id, state, pred, small, gateState, escLabel }: {
   );
 }
 
-// ── Platform row (horizontal, compact) ────────────────────────────────────────
-function PlatformRow({ id, state, pred }: {
-  id: string; state?: ZoneState; pred?: ZonePrediction;
-}) {
+// ── Platform row ──────────────────────────────────────────────────────────────
+function PlatformRow({ id, state, pred }: { id: string; state?: ZoneState; pred?: ZonePrediction }) {
   const color   = state?.color ?? "green";
   const accent  = BORDER_MAP[color];
   const bg      = COLOR_MAP[color];
@@ -200,56 +173,35 @@ function PlatformRow({ id, state, pred }: {
         border: `1px solid ${isCrit ? accent : "#21262D"}`,
         borderLeft: `3px solid ${accent}`,
         borderRadius: 6,
-        padding: "8px 14px",
+        padding: "6px 12px",
         display: "flex",
         alignItems: "center",
-        gap: 12,
-        flex: 1,
+        gap: 8,
       }}
       animate={isCrit ? { borderColor: [accent, "#21262D", accent] } : {}}
       transition={{ duration: 0.8, repeat: Infinity }}
     >
-      {/* Zone label */}
-      <div style={{
-        fontSize: 11, fontWeight: 600, color: "#64748B",
-        textTransform: "uppercase", letterSpacing: "0.05em",
-        width: 52, flexShrink: 0,
-      }}>
+      <div style={{ fontSize: 10, fontWeight: 600, color: "#64748B", textTransform: "uppercase", letterSpacing: "0.05em", width: 44, flexShrink: 0 }}>
         {ZONE_META[id]?.shortLabel ?? id}
       </div>
-
-      {/* Density value */}
-      <div style={{ fontSize: 18, fontWeight: 800, color: accent, width: 72, flexShrink: 0 }}>
+      <div style={{ fontSize: 16, fontWeight: 800, color: accent, width: 64, flexShrink: 0 }}>
         {density.toFixed(2)}
-        <span style={{ fontSize: 10, color: "#475569", fontWeight: 400 }}>/m²</span>
+        <span style={{ fontSize: 9, color: "#475569", fontWeight: 400 }}>/m²</span>
       </div>
-
-      {/* Count */}
       {state && (
-        <div style={{ fontSize: 12, color: "#94A3B8", width: 64, flexShrink: 0 }}>
+        <div style={{ fontSize: 11, color: "#94A3B8", width: 52, flexShrink: 0 }}>
           {state.count} <span style={{ color: "#475569", fontSize: 10 }}>prs</span>
         </div>
       )}
-
-      {/* Bar */}
-      <div style={{
-        flex: 1, height: 6, background: "#21262D",
-        borderRadius: 3, overflow: "hidden",
-      }}>
+      <div style={{ flex: 1, height: 5, background: "#21262D", borderRadius: 3, overflow: "hidden" }}>
         <motion.div
           style={{ height: "100%", background: accent, borderRadius: 3 }}
-          initial={{ width: 0 }}
           animate={{ width: `${pct}%` }}
           transition={{ duration: 0.4 }}
         />
       </div>
-
-      {/* Prediction */}
       {pred && (
-        <div style={{
-          fontSize: 11, color: BORDER_MAP[pred.t90.color],
-          flexShrink: 0, fontFamily: "JetBrains Mono, monospace",
-        }}>
+        <div style={{ fontSize: 10, color: BORDER_MAP[pred.t90.color], flexShrink: 0 }}>
           +90s {pred.t90.density.toFixed(1)}
         </div>
       )}
