@@ -54,12 +54,10 @@ export default function VideoTrackingView({ videoSrc, persons, zones, loading, s
   const targetRef     = useRef<PersonBbox[]>([]); // target for current lerp step
   const [hasVideo, setHasVideo] = useState(false);
 
-  // Track raw backend persons (for count display)
-  personsRef.current = persons;
-
-  // When backend delivers new positions, update lerp target
+  // When backend delivers new positions, update lerp target + count ref
   useEffect(() => {
-    targetRef.current = persons;
+    targetRef.current  = persons;
+    personsRef.current = persons;
   }, [persons]);
 
   useEffect(() => {

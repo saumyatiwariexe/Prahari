@@ -13,7 +13,6 @@ REST       /intervention/* → confirm / cancel staged interventions
 
 import asyncio
 import json
-import time
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Literal
@@ -52,7 +51,6 @@ _MAX_HIST = 30
 _density_hist: dict[str, list[float]] = {z: [] for z in ZONES}
 
 
-
 def _update_hist(zone_states: dict):
     for zid, state in zone_states.items():
         buf = _density_hist.get(zid, [])
@@ -62,10 +60,23 @@ def _update_hist(zone_states: dict):
 
 def _sync_log_statuses(engine):
     """Propagate auto-confirmed L2 statuses back into the all_interventions log dicts."""
-    staged_ids = {entry["iv"].id for entry in engine._staged.values()}
+    staged_ids = {iv.id for iv in engine.get_staged()}
     for iv_dict in all_interventions:
         if iv_dict["status"] == "staged" and iv_dict["id"] not in staged_ids:
             iv_dict["status"] = "confirmed"
+
+
+def _do_reset(speed: float = 2.0):
+    """Shared reset logic for demo_start and demo_reset."""
+    global mode
+    mode = "scenario"
+    scenario.set_speed(speed)
+    scenario.reset()
+    engine_cg.reset()
+    engine_human.reset()
+    all_interventions.clear()
+    for buf in _density_hist.values():
+        buf.clear()
 
 
 # ── App setup ────────────────────────────────────────────────────────────────
@@ -103,31 +114,17 @@ async def websocket_live(ws: WebSocket):
 # ── Scenario (demo comparison) endpoints ─────────────────────────────────────
 @app.post("/demo/start")
 async def demo_start(speed: float = 2.0):
-    global mode, pipeline
+    global pipeline
     if pipeline:
         pipeline.stop()
         pipeline = None
-    mode = "scenario"
-    scenario._speed = speed
-    scenario.reset()
-    engine_cg.reset()
-    engine_human.reset()
-    all_interventions.clear()
-    for buf in _density_hist.values():
-        buf.clear()
+    _do_reset(speed)
     return {"status": "started", "mode": "scenario", "speed": speed}
 
 
 @app.post("/demo/reset")
 async def demo_reset():
-    global mode
-    mode = "scenario"
-    scenario.reset()
-    engine_cg.reset()
-    engine_human.reset()
-    all_interventions.clear()
-    for buf in _density_hist.values():
-        buf.clear()
+    _do_reset()
     return {"status": "reset"}
 
 
@@ -174,7 +171,9 @@ async def live_sources():
 # ── Intervention endpoints ────────────────────────────────────────────────────
 @app.post("/intervention/{iv_id}/confirm")
 async def confirm(iv_id: str):
-    ok = engine_cg.confirm(iv_id) or engine_human.confirm(iv_id)
+    ok_cg    = engine_cg.confirm(iv_id)
+    ok_human = engine_human.confirm(iv_id)
+    ok = ok_cg or ok_human
     if ok:
         for iv_dict in all_interventions:
             if iv_dict["id"] == iv_id:
@@ -185,7 +184,9 @@ async def confirm(iv_id: str):
 
 @app.post("/intervention/{iv_id}/cancel")
 async def cancel(iv_id: str):
-    ok = engine_cg.cancel(iv_id) or engine_human.cancel(iv_id)
+    ok_cg    = engine_cg.cancel(iv_id)
+    ok_human = engine_human.cancel(iv_id)
+    ok = ok_cg or ok_human
     if ok:
         for iv_dict in all_interventions:
             if iv_dict["id"] == iv_id:
@@ -198,97 +199,97 @@ async def cancel(iv_id: str):
 async def broadcast_loop():
     while True:
         await asyncio.sleep(WEBSOCKET_INTERVAL_MS / 1000)
+        try:
+            await _broadcast_tick()
+        except Exception as e:
+            print(f"[Prahari] broadcast_loop error: {e}", flush=True)
 
-        if mode == "video" and pipeline is not None:
-            # Real video: get latest YOLOv8 zone states (always the most recent frame)
-            zone_cg = pipeline.get_states()
-            if zone_cg is None:
-                # Model still loading — send heartbeat so frontend loading spinner shows
-                lp = json.dumps({"video_ready": False, "persons": [], "loading": True})
-                for ws in connections[:]:
-                    try:
-                        await ws.send_text(lp)
-                    except Exception:
-                        pass
-                continue
 
-            zone_human = zone_cg   # no scripted human-side in live mode
-            elapsed = pipeline.elapsed()
-            persons = pipeline.get_persons()
+async def _broadcast_tick():
+    if mode == "video" and pipeline is not None:
+        zone_cg = pipeline.get_states()
+        if zone_cg is None:
+            # Model still loading — send heartbeat so frontend shows spinner
+            lp = json.dumps({"video_ready": False, "persons": [], "loading": True})
+            for ws in connections[:]:
+                try:
+                    await ws.send_text(lp)
+                except Exception:
+                    pass
+            return
 
-            _update_hist(zone_cg)
-            predictions = extrapolator.predict(zone_cg, _density_hist)
+        elapsed = pipeline.elapsed()
+        persons = pipeline.get_persons()
+        _update_hist(zone_cg)
+        predictions = extrapolator.predict(zone_cg, _density_hist)
 
-            new_cg = engine_cg.evaluate(zone_cg, predictions)
-            for iv in new_cg:
-                all_interventions.insert(0, {**iv.to_dict(), "side": "crowdguard"})
-            _sync_log_statuses(engine_cg)
+        for iv in engine_cg.evaluate(zone_cg, predictions):
+            all_interventions.insert(0, {**iv.to_dict(), "side": "crowdguard"})
+        _sync_log_statuses(engine_cg)
 
-            payload = {
-                "elapsed": round(elapsed, 1),
-                "crowdguard": {
-                    "zones": zone_cg,
-                    "predictions": predictions,
-                    "l1_fired": any(iv["level"] == 1 for iv in all_interventions),
-                },
-                "human": {
-                    "zones": zone_cg,
-                    "crush_occurred": False,
-                    "human_responded": False,
-                },
-                "interventions": all_interventions[:40],
-                "staged": [iv.to_dict() for iv in engine_cg.get_staged()],
-                "system_status": _system_status(zone_cg),
-                "persons": persons,
-                "video_ready": True,
-            }
+        payload = {
+            "elapsed": round(elapsed, 1),
+            "crowdguard": {
+                "zones": zone_cg,
+                "predictions": predictions,
+                "l1_fired": any(iv["level"] == 1 for iv in all_interventions),
+            },
+            "human": {
+                "zones": zone_cg,
+                "crush_occurred": False,
+                "human_responded": False,
+            },
+            "interventions": all_interventions[:40],
+            "staged": [iv.to_dict() for iv in engine_cg.get_staged()],
+            "system_status": _system_status(zone_cg),
+            "persons": persons,
+            "video_ready": True,
+        }
 
-        else:
-            # Scenario mode (scripted demo comparison)
-            elapsed = scenario.elapsed()
-            zone_cg    = get_frame(elapsed, mode="crowdguard")
-            zone_human = get_frame(elapsed, mode="human")
+    else:
+        # Scenario mode
+        elapsed = scenario.elapsed()
+        zone_cg    = get_frame(elapsed, mode="crowdguard")
+        zone_human = get_frame(elapsed, mode="human")
 
-            _update_hist(zone_cg)
-            predictions = extrapolator.predict(zone_cg, _density_hist)
+        _update_hist(zone_cg)
+        predictions = extrapolator.predict(zone_cg, _density_hist)
 
-            new_cg    = engine_cg.evaluate(zone_cg, predictions)
-            new_human = engine_human.evaluate(zone_human, {}) if elapsed >= HUMAN_RESPONSE_TIME else []
-
-            for iv in new_cg:
-                all_interventions.insert(0, {**iv.to_dict(), "side": "crowdguard"})
-            for iv in new_human:
+        for iv in engine_cg.evaluate(zone_cg, predictions):
+            all_interventions.insert(0, {**iv.to_dict(), "side": "crowdguard"})
+        if elapsed >= HUMAN_RESPONSE_TIME:
+            for iv in engine_human.evaluate(zone_human, {}):
                 all_interventions.insert(0, {**iv.to_dict(), "side": "human"})
-            _sync_log_statuses(engine_cg)
+        _sync_log_statuses(engine_cg)
 
-            payload = {
-                "elapsed": round(elapsed, 1),
-                "crowdguard": {
-                    "zones": zone_cg,
-                    "predictions": predictions,
-                    "l1_fired": elapsed >= L1_FIRE_TIME,
-                },
-                "human": {
-                    "zones": zone_human,
-                    "crush_occurred": elapsed >= CRUSH_TIME_HUMAN,
-                    "human_responded": elapsed >= HUMAN_RESPONSE_TIME,
-                },
-                "interventions": all_interventions[:40],
-                "staged": [iv.to_dict() for iv in engine_cg.get_staged()],
-                "system_status": _system_status(zone_cg),
-                "persons": [],
-                "video_ready": False,
-            }
+        payload = {
+            "elapsed": round(elapsed, 1),
+            "crowdguard": {
+                "zones": zone_cg,
+                "predictions": predictions,
+                "l1_fired": elapsed >= L1_FIRE_TIME,
+            },
+            "human": {
+                "zones": zone_human,
+                "crush_occurred": elapsed >= CRUSH_TIME_HUMAN,
+                "human_responded": elapsed >= HUMAN_RESPONSE_TIME,
+            },
+            "interventions": all_interventions[:40],
+            "staged": [iv.to_dict() for iv in engine_cg.get_staged()],
+            "system_status": _system_status(zone_cg),
+            "persons": [],
+            "video_ready": False,
+        }
 
-        dead = []
-        for ws in connections:
-            try:
-                await ws.send_json(payload)
-            except Exception:
-                dead.append(ws)
-        for ws in dead:
-            if ws in connections:
-                connections.remove(ws)
+    dead = []
+    for ws in connections[:]:
+        try:
+            await ws.send_json(payload)
+        except Exception:
+            dead.append(ws)
+    for ws in dead:
+        if ws in connections:
+            connections.remove(ws)
 
 
 def _system_status(zones: dict) -> str:

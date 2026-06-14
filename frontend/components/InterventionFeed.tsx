@@ -6,7 +6,13 @@ import { LEVEL_COLORS, ZONE_META } from "@/lib/constants";
 
 const M: React.CSSProperties = { fontFamily: "'Share Tech Mono', monospace" };
 
-const LEVEL_TAG: Record<number, string> = { 1: "L1-AUTO", 2: "L2-STAGED", 3: "L3-CONFIRM" };
+const LEVEL_TAG: Record<number, string> = {
+  1: "L1-AUTO",
+  2: "L2-STAGED",
+  3: "L3-CONFIRM",
+  4: "PRE-WARN",
+  5: "SOS",
+};
 
 const STATUS_META: Record<string, { label: string; color: string }> = {
   fired:           { label: "FIRED",     color: "#00C84C" },

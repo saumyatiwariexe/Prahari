@@ -4,14 +4,22 @@ L1 fires immediately. L2 has a cancel window. L3 requires explicit confirm.
 Gate closure (L3) NEVER auto-fires.
 """
 import time
-from constants import L1_TRIGGER_DENSITY, L2_TRIGGER_DENSITY, L3_TRIGGER_DENSITY, L2_COUNTDOWN_SECONDS
-from decision.interventions import Intervention, Level, L1_ACTIONS, L2_ACTIONS, L3_ACTIONS
+from constants import (
+    L1_TRIGGER_DENSITY, L2_TRIGGER_DENSITY, L3_TRIGGER_DENSITY,
+    PRE_WARN_DENSITY, FAILSAFE_DENSITY, L2_COUNTDOWN_SECONDS,
+)
+from decision.interventions import (
+    Intervention, Level,
+    L1_ACTIONS, L2_ACTIONS, L3_ACTIONS,
+    PRE_WARN_ACTIONS, SOS_ACTIONS,
+)
 
 
 class DecisionEngine:
     def __init__(self):
-        self._fired: set[str] = set()        # zone+level keys already actioned
-        self._staged: dict[str, dict] = {}   # L2/L3 interventions pending
+        self._fired: set[str] = set()           # zone+level keys already actioned
+        self._staged: dict[str, dict] = {}      # L2/L3 interventions pending
+        self._pre_warn_zones: set[str] = set()  # zones where PRE_WARN already fired
 
     def evaluate(self, zone_states: dict, predictions: dict) -> list[Intervention]:
         """
@@ -24,9 +32,11 @@ class DecisionEngine:
         for zone_id, state in zone_states.items():
             density = state["density"]
             pred_90 = predictions.get(zone_id, {}).get("t90", {}).get("density", 0.0)
-            key_l1 = f"{zone_id}_L1"
-            key_l2 = f"{zone_id}_L2"
-            key_l3 = f"{zone_id}_L3"
+            key_l1       = f"{zone_id}_L1"
+            key_l2       = f"{zone_id}_L2"
+            key_l3       = f"{zone_id}_L3"
+            key_pre_warn = f"{zone_id}_PRE_WARN"
+            key_sos      = f"{zone_id}_SOS"
 
             # L1: fire autonomously, once per zone session
             if density >= L1_TRIGGER_DENSITY and key_l1 not in self._fired:
@@ -70,6 +80,39 @@ class DecisionEngine:
                     self._staged[key_l3] = {"iv": iv, "staged_at": time.time()}
                     new_interventions.append(iv)
 
+            # PRE_WARN: auto-fire standby alert when density hits pre-warn threshold
+            if density >= PRE_WARN_DENSITY and key_pre_warn not in self._fired:
+                if zone_id in PRE_WARN_ACTIONS:
+                    label, msg = PRE_WARN_ACTIONS[zone_id]
+                    iv = Intervention(
+                        zone=zone_id,
+                        level=Level.PRE_WARN,
+                        trigger=f"Density {density:.1f}/m² — pre-warn threshold crossed",
+                        action=f"{label}: {msg}",
+                        status="fired",
+                        response_time_ms=(time.perf_counter() - t_start) * 1000,
+                    )
+                    self._fired.add(key_pre_warn)
+                    self._pre_warn_zones.add(zone_id)
+                    new_interventions.append(iv)
+
+            # SOS: auto-fire full emergency dispatch only AFTER pre-warn has already fired for this zone
+            if (density >= FAILSAFE_DENSITY
+                    and zone_id in self._pre_warn_zones
+                    and key_sos not in self._fired):
+                if zone_id in SOS_ACTIONS:
+                    label, msg = SOS_ACTIONS[zone_id]
+                    iv = Intervention(
+                        zone=zone_id,
+                        level=Level.SOS,
+                        trigger=f"Density {density:.1f}/m² — LETHAL threshold. Emergency dispatch.",
+                        action=f"{label}: {msg}",
+                        status="fired",
+                        response_time_ms=(time.perf_counter() - t_start) * 1000,
+                    )
+                    self._fired.add(key_sos)
+                    new_interventions.append(iv)
+
         # Auto-execute L2 after countdown
         now = time.time()
         for key, entry in list(self._staged.items()):
@@ -108,3 +151,4 @@ class DecisionEngine:
     def reset(self):
         self._fired.clear()
         self._staged.clear()
+        self._pre_warn_zones.clear()

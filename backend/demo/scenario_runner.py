@@ -19,7 +19,6 @@ Scenario clock (300s total at speed=2.0 → 2.5 min demo):
   T=252  → 22:40  Fire tenders arrive (human "response")
   T=300  → End
 """
-import math
 import time
 from constants import ZONES, density_color
 
@@ -252,6 +251,9 @@ def _flow_for(zone_id: str, density: float, t: float) -> dict:
 class ScenarioRunner:
     def __init__(self, speed: float = 2.0):
         self._start: float | None = None
+        self._speed = speed
+
+    def set_speed(self, speed: float):
         self._speed = speed
 
     def elapsed(self) -> float:

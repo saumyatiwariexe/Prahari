@@ -8,9 +8,11 @@ import uuid
 
 
 class Level(IntEnum):
-    L1 = 1
-    L2 = 2
-    L3 = 3
+    L1       = 1
+    L2       = 2
+    L3       = 3
+    PRE_WARN = 4   # standby alert — authorities placed on standby
+    SOS      = 5   # full emergency dispatch — all services activated
 
 
 @dataclass
@@ -70,4 +72,30 @@ L2_ACTIONS = {
 L3_ACTIONS = {
     "FOB1": "Platform 3 & 4 closure recommended. Requires confirmation.",
     "CONC": "Station entry suspension recommended. Requires confirmation.",
+}
+
+PRE_WARN_ACTIONS = {
+    "FOB1": (
+        "STANDBY ALERT",
+        "Density critical at FOB-3 stairway. RPF, Police, Fire Brigade & Ambulance "
+        "placed on standby. Prepare emergency response teams."
+    ),
+    "CONC": (
+        "STANDBY ALERT",
+        "Density critical at Main Concourse. RPF, Police, Fire Brigade & Ambulance "
+        "placed on standby. Prepare emergency response teams."
+    ),
+}
+
+SOS_ACTIONS = {
+    "FOB1": (
+        "EMERGENCY DISPATCH",
+        "CRUSH IMMINENT — FOB-3 Stairway (Pf 14/15). "
+        "RPF deployed. Police 100 called. Fire Brigade 101 dispatched. Ambulance 108 requested."
+    ),
+    "CONC": (
+        "EMERGENCY DISPATCH",
+        "CRUSH IMMINENT — Main Concourse (NDLS). "
+        "RPF deployed. Police 100 called. Fire Brigade 101 dispatched. Ambulance 108 requested."
+    ),
 }

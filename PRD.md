@@ -1,10 +1,13 @@
 ﻿# Prahari — Product Requirements Document
 ## FAR AWAY Hackathon 2026 | Railways Theme
 
-**Version:** 1.2  
-**Date:** June 12, 2026  
+**Version:** 1.3  
+**Date:** June 14, 2026  
 **Status:** ACTIVE — Build Reference  
 **Demo is the primary deliverable. Every decision serves the demo.**
+
+### v1.3 Changes — PRE_WARN + SOS Failsafe Escalation
+Added Level 4 (PRE_WARN) and Level 5 (SOS) to the graded autonomy chain. PRE_WARN auto-fires at density ≥ 7.0/m² (standby alert to all emergency services). SOS auto-fires at density ≥ 8.0/m² only after PRE_WARN has already fired for that zone (full emergency dispatch: RPF, Police 100, Fire 101, Ambulance 108). Frontend: amber PreWarnBanner and full-screen pulsing EmergencyOverlay.
 
 ### v1.2 Changes — Visual Animation Layer
 Added F7–F12: PA announcement banner, escalator direction animation, gate closure animation, RPF booth alert with expanding rings, phone notification popup, and background crowd video player.
@@ -185,13 +188,38 @@ Black  (Lethal):   6+ persons/m²      — L2/L3 stage
 |---|---|
 | Predicted crush convergence in <60s | Full platform closure — requires explicit tap, but all details pre-filled |
 
+#### Level 4 — PRE_WARN — Autonomous Standby Alert (density ≥ 7.0/m²)
+| Trigger | Action |
+|---|---|
+| Zone density ≥ 7.0/m² | Standby alert auto-dispatched — RPF, Police, Fire Brigade & Ambulance placed on standby |
+
+**Design intent:** This fires BEFORE the lethal threshold. Emergency services are notified to prepare while Prahari's L1/L2/L3 interventions are still attempting to bring density down. If they succeed, services stand down. If they fail, services are already staged when SOS fires.
+
+**UI:** Amber slide-down banner: "PRE-WARN ACTIVE — Emergency services on standby for [Zone]"
+
+#### Level 5 — SOS — Autonomous Failsafe (density ≥ 8.0/m² + PRE_WARN already fired)
+| Trigger | Action |
+|---|---|
+| Zone density ≥ 8.0/m² (lethal) AND PRE_WARN already fired for that zone | Full emergency dispatch: RPF deployed, Police 100 called, Fire Brigade 101 dispatched, Ambulance 108 requested |
+
+**Design intent:** The sequential guarantee — SOS cannot fire cold. PRE_WARN must have already been issued for the same zone. This eliminates the risk of accidental SOS from a single bad sensor reading. Two independent density readings above threshold before full emergency activation.
+
+**UI:** Full-screen pulsing red overlay with four service confirmation rows. Operator must acknowledge to dismiss.
+
+**AGENT_RULES constraint:** SOS is autonomous but NEVER fires without a prior PRE_WARN for the same zone. This constraint is enforced in engine.py via `_pre_warn_zones` set check and MUST NOT be removed.
+
 **Acceptance Criteria:**
 - [ ] L1 interventions fire automatically with no human input
 - [ ] L1 fires within 3 seconds of threshold breach
 - [ ] L2 shows countdown timer; cancellable
 - [ ] L3 shows pre-filled decision card; single confirm button
-- [ ] All interventions logged with timestamp in intervention feed
-- [ ] UI clearly shows which level each intervention is
+- [ ] PRE_WARN fires when zone density ≥ 7.0/m², no human action required
+- [ ] PRE_WARN amber banner appears at top of dashboard
+- [ ] SOS fires when zone density ≥ 8.0/m² AND PRE_WARN has already fired for that zone
+- [ ] SOS full-screen red overlay appears with all four service dispatch rows
+- [ ] SOS overlay dismissable by operator after acknowledgement
+- [ ] All interventions (L1–SOS) logged with timestamp in intervention feed
+- [ ] UI clearly shows which level each intervention is (PRE-WARN tag, SOS tag)
 
 ---
 

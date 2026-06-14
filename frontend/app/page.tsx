@@ -12,6 +12,8 @@ import PhoneNotification from "@/components/PhoneNotification";
 import RPFAlert from "@/components/RPFAlert";
 import VideoPlayer from "@/components/VideoPlayer";
 import VideoTrackingView from "@/components/VideoTrackingView";
+import EmergencyOverlay from "@/components/EmergencyOverlay";
+import PreWarnBanner from "@/components/PreWarnBanner";
 import type { GateState } from "@/components/GateStatusOverlay";
 import type { Intervention } from "@/lib/types";
 
@@ -38,6 +40,7 @@ export default function Home() {
 
   const [paMessage, setPaMessage]   = useState<{ message: string; zone: string } | null>(null);
   const [phoneNotif, setPhoneNotif] = useState<{ title: string; body: string; level: string } | null>(null);
+  const [sosOverlayDismissed, setSosOverlayDismissed] = useState(false);
   const paShownIds    = useRef<Set<string>>(new Set());
   const phoneShownIds = useRef<Set<string>>(new Set());
 
@@ -127,6 +130,7 @@ export default function Home() {
     fetch(`${API_URL}/demo/start`, { method: "POST" })
       .then(() => {
         setDemoStarted(true);
+        setSosOverlayDismissed(false);
         paShownIds.current.clear();
         phoneShownIds.current.clear();
       })
@@ -172,6 +176,11 @@ export default function Home() {
   const esc2Reversed = allInterventions.some(iv => iv.level === 1 && iv.zone === "P4" && iv.status !== "cancelled");
   const rpfActive    = allInterventions.some(iv => iv.level === 2 && iv.zone === "CONC" && iv.status !== "cancelled");
   const hasCritical  = Object.values(zones).some(z => z.color === "critical");
+
+  const preWarnIv  = allInterventions.find(iv => iv.level === 4 && iv.status === "fired");
+  const sosIv      = allInterventions.find(iv => iv.level === 5 && iv.status === "fired");
+  const preWarnActive = !!preWarnIv && !sosIv;
+  const sosActive     = !!sosIv && !sosOverlayDismissed;
 
   return (
     <div className="h-screen w-screen flex flex-col overflow-hidden" style={{ background: "#06080E" }}>
@@ -414,6 +423,12 @@ export default function Home() {
       <PAAnnouncementBanner message={paMessage?.message ?? null} zone={paMessage?.zone ?? ""} onDismiss={dismissPA} />
       <PhoneNotification notification={phoneNotif} onDismiss={dismissPhone} />
       <RPFAlert active={rpfActive} boothId="BOOTH-3" distance="120m" />
+      <PreWarnBanner active={preWarnActive} intervention={preWarnIv} />
+      <EmergencyOverlay
+        active={sosActive}
+        sosIntervention={sosIv}
+        onDismiss={() => setSosOverlayDismissed(true)}
+      />
       {/* Floating CCTV widget — only in scenario mode; platform/aerial uses the main split view */}
       {liveMode === "scenario" && (
         <VideoPlayer

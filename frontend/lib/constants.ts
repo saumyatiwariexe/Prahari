@@ -39,6 +39,8 @@ export const LEVEL_COLORS: Record<number, string> = {
   1: "#00C84C",
   2: "#E8A000",
   3: "#E82020",
+  4: "#FF6B00",  // PRE_WARN — deep orange
+  5: "#FF1A1A",  // SOS — full emergency red
 };
 
 export const WS_URL  = process.env.NEXT_PUBLIC_WS_URL  ?? "ws://localhost:8000/ws/live";

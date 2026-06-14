@@ -1,7 +1,7 @@
 export type DensityColor = "green" | "amber" | "red" | "critical";
 export type SystemStatus = "normal" | "monitoring" | "active" | "critical";
 export type InterventionStatus = "fired" | "staged" | "pending_confirm" | "cancelled" | "confirmed";
-export type InterventionLevel = 1 | 2 | 3;
+export type InterventionLevel = 1 | 2 | 3 | 4 | 5;
 
 export interface FlowVector {
   dx: number;
