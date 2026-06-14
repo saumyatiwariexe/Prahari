@@ -18,9 +18,9 @@ export default function SplitScreen({ data }: Props) {
   }
 
   const { elapsed } = data;
-  const cgL1Fired     = data.crowdguard.l1_fired;
-  const crushOccurred = data.human.crush_occurred;
-  const humanResponded = data.human.human_responded;
+  const cgL1Fired      = data.crowdguard?.l1_fired ?? false;
+  const crushOccurred  = data.human?.crush_occurred ?? false;
+  const humanResponded = data.human?.human_responded ?? false;
 
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100%", gap: 6 }}>
@@ -52,7 +52,7 @@ export default function SplitScreen({ data }: Props) {
           </div>
 
           <div className="scrollbar-thin" style={{ flex: 1, padding: 6, position: "relative", minHeight: 0, overflowY: "auto" }}>
-            <StationMap zones={data.human.zones} compact />
+            <StationMap zones={data.human?.zones ?? {}} compact />
 
             {!crushOccurred && !humanResponded && elapsed > 30 && (
               <div style={{ position: "absolute", bottom: 14, left: 0, right: 0,
@@ -132,8 +132,8 @@ export default function SplitScreen({ data }: Props) {
 
           <div className="scrollbar-thin" style={{ flex: 1, padding: 6, position: "relative", minHeight: 0, overflowY: "auto" }}>
             <StationMap
-              zones={data.crowdguard.zones}
-              predictions={data.crowdguard.predictions}
+              zones={data.crowdguard?.zones ?? {}}
+              predictions={data.crowdguard?.predictions}
               showPredictions compact
             />
 

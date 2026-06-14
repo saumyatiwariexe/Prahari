@@ -36,6 +36,7 @@ node_modules/
 .next/
 out/
 .npm/
+*.tsbuildinfo
 
 # OS
 .DS_Store
@@ -51,6 +52,10 @@ desktop.ini
 # Logs
 *.log
 logs/
+
+# Editor temp files
+*.tmp
+*.tmp.*
 
 # Environment
 .env

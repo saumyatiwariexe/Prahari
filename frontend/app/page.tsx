@@ -28,6 +28,14 @@ const SCADA_STATUS: Record<string, { color: string; label: string }> = {
 
 const M: React.CSSProperties = { fontFamily: "'Share Tech Mono', monospace" };
 
+const DEMO_LEVELS = [
+  { level: 1, label: "L1",   color: "#00C84C" },
+  { level: 2, label: "L2",   color: "#E8A000" },
+  { level: 3, label: "L3",   color: "#E82020" },
+  { level: 4, label: "PRE",  color: "#FF6B00" },
+  { level: 5, label: "SOS",  color: "#FF1A1A" },
+];
+
 export default function Home() {
   const { data, connected } = useLiveData();
   const [view, setView]       = useState<View>("dashboard");
@@ -41,6 +49,7 @@ export default function Home() {
   const [paMessage, setPaMessage]   = useState<{ message: string; zone: string } | null>(null);
   const [phoneNotif, setPhoneNotif] = useState<{ title: string; body: string; level: string } | null>(null);
   const [sosOverlayDismissed, setSosOverlayDismissed] = useState(false);
+  const [demoMaxLevel, setDemoMaxLevel] = useState(5);
   const paShownIds    = useRef<Set<string>>(new Set());
   const phoneShownIds = useRef<Set<string>>(new Set());
 
@@ -125,16 +134,27 @@ export default function Home() {
     setVideoLoading(false);
   };
 
+  const _clearVisualState = () => {
+    setSosOverlayDismissed(false);
+    setPaMessage(null);
+    setPhoneNotif(null);
+    paShownIds.current.clear();
+    phoneShownIds.current.clear();
+  };
+
   // Actually fire the demo scenario
-  const launchDemo = () =>
-    fetch(`${API_URL}/demo/start`, { method: "POST" })
-      .then(() => {
-        setDemoStarted(true);
-        setSosOverlayDismissed(false);
-        paShownIds.current.clear();
-        phoneShownIds.current.clear();
-      })
+  const launchDemo = (level = demoMaxLevel) =>
+    fetch(`${API_URL}/demo/start?max_level=${level}`, { method: "POST" })
+      .then(() => { setDemoStarted(true); _clearVisualState(); })
       .catch(() => {});
+
+  const setLevel = (level: number) => {
+    setDemoMaxLevel(level);
+    _clearVisualState();
+    if (demoStarted) {
+      fetch(`${API_URL}/demo/set_level/${level}`, { method: "POST" }).catch(() => {});
+    }
+  };
 
   const startLive = (source: "platform" | "aerial") =>
     fetch(`${API_URL}/live/start?source=${source}`, { method: "POST" })
@@ -226,6 +246,32 @@ export default function Home() {
             </button>
           ))}
         </div>
+
+        {/* Demo level toggle — only in scenario mode */}
+        {liveMode === "scenario" && (
+          <>
+            <Divider />
+            <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+              <span style={{ ...M, fontSize: 9, color: "#1A3050", letterSpacing: "0.1em" }}>MAX LEVEL</span>
+              {DEMO_LEVELS.map(({ level, label, color }) => {
+                const sel = demoMaxLevel === level;
+                return (
+                  <button key={level} onClick={() => setLevel(level)} style={{
+                    ...M,
+                    height: 22, padding: "0 7px", fontSize: 9,
+                    background: sel ? color : "transparent",
+                    color: sel ? "#000" : "#2C4060",
+                    border: `1px solid ${sel ? color : "#142035"}`,
+                    cursor: "pointer", letterSpacing: "0.06em",
+                    fontWeight: sel ? 700 : 400,
+                  }}>
+                    {label}
+                  </button>
+                );
+              })}
+            </div>
+          </>
+        )}
 
         <div style={{ flex: 1 }} />
 
@@ -326,8 +372,21 @@ export default function Home() {
                             <div style={{ ...M, fontSize: 10, color: "#2C4060", letterSpacing: "0.12em" }}>
                               SCENARIO MODE — READY
                             </div>
+                            {/* Level preview */}
+                            <div style={{ display: "flex", gap: 5 }}>
+                              {DEMO_LEVELS.map(({ level, label, color }) => (
+                                <div key={level} style={{
+                                  ...M, fontSize: 9, padding: "3px 8px",
+                                  color: demoMaxLevel >= level ? color : "#1A3050",
+                                  border: `1px solid ${demoMaxLevel >= level ? color : "#0E1E30"}`,
+                                  background: demoMaxLevel >= level ? `${color}12` : "transparent",
+                                }}>
+                                  {label}
+                                </div>
+                              ))}
+                            </div>
                             <button
-                              onClick={launchDemo}
+                              onClick={() => launchDemo()}
                               style={{
                                 ...M,
                                 padding: "10px 28px", fontSize: 13, cursor: "pointer",

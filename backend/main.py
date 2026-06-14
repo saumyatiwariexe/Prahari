@@ -66,12 +66,14 @@ def _sync_log_statuses(engine):
             iv_dict["status"] = "confirmed"
 
 
-def _do_reset(speed: float = 2.0):
+def _do_reset(speed: float = 2.0, max_level: int = 5):
     """Shared reset logic for demo_start and demo_reset."""
     global mode
     mode = "scenario"
     scenario.set_speed(speed)
     scenario.reset()
+    engine_cg.set_max_level(max_level)
+    engine_human.set_max_level(max_level)
     engine_cg.reset()
     engine_human.reset()
     all_interventions.clear()
@@ -113,19 +115,28 @@ async def websocket_live(ws: WebSocket):
 
 # ── Scenario (demo comparison) endpoints ─────────────────────────────────────
 @app.post("/demo/start")
-async def demo_start(speed: float = 2.0):
+async def demo_start(speed: float = 2.0, max_level: int = 5):
     global pipeline
     if pipeline:
         pipeline.stop()
         pipeline = None
-    _do_reset(speed)
-    return {"status": "started", "mode": "scenario", "speed": speed}
+    _do_reset(speed, max_level)
+    return {"status": "started", "mode": "scenario", "speed": speed, "max_level": max_level}
 
 
 @app.post("/demo/reset")
 async def demo_reset():
     _do_reset()
     return {"status": "reset"}
+
+
+@app.post("/demo/set_level/{level}")
+async def demo_set_level(level: int):
+    """Change the max intervention level mid-demo and restart the scenario."""
+    if level < 1 or level > 5:
+        return {"status": "error", "detail": "level must be 1–5"}
+    _do_reset(max_level=level)
+    return {"status": "restarted", "max_level": level}
 
 
 # ── Live video endpoints ──────────────────────────────────────────────────────
@@ -224,7 +235,7 @@ async def _broadcast_tick():
         predictions = extrapolator.predict(zone_cg, _density_hist)
 
         for iv in engine_cg.evaluate(zone_cg, predictions):
-            all_interventions.insert(0, {**iv.to_dict(), "side": "crowdguard"})
+            all_interventions.append({**iv.to_dict(), "side": "crowdguard"})
         _sync_log_statuses(engine_cg)
 
         payload = {
@@ -239,7 +250,7 @@ async def _broadcast_tick():
                 "crush_occurred": False,
                 "human_responded": False,
             },
-            "interventions": all_interventions[:40],
+            "interventions": all_interventions[-40:],
             "staged": [iv.to_dict() for iv in engine_cg.get_staged()],
             "system_status": _system_status(zone_cg),
             "persons": persons,
@@ -256,10 +267,10 @@ async def _broadcast_tick():
         predictions = extrapolator.predict(zone_cg, _density_hist)
 
         for iv in engine_cg.evaluate(zone_cg, predictions):
-            all_interventions.insert(0, {**iv.to_dict(), "side": "crowdguard"})
+            all_interventions.append({**iv.to_dict(), "side": "crowdguard"})
         if elapsed >= HUMAN_RESPONSE_TIME:
             for iv in engine_human.evaluate(zone_human, {}):
-                all_interventions.insert(0, {**iv.to_dict(), "side": "human"})
+                all_interventions.append({**iv.to_dict(), "side": "human"})
         _sync_log_statuses(engine_cg)
 
         payload = {
@@ -274,7 +285,7 @@ async def _broadcast_tick():
                 "crush_occurred": elapsed >= CRUSH_TIME_HUMAN,
                 "human_responded": elapsed >= HUMAN_RESPONSE_TIME,
             },
-            "interventions": all_interventions[:40],
+            "interventions": all_interventions[-40:],
             "staged": [iv.to_dict() for iv in engine_cg.get_staged()],
             "system_status": _system_status(zone_cg),
             "persons": [],

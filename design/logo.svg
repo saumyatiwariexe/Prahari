@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 120" fill="none">
+  <defs>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;600;700&amp;display=swap');
+    </style>
+  </defs>
+
+  <!-- Icon mark: minimal shield grid -->
+  <g transform="translate(0, 4)">
+    <!-- Shield outline -->
+    <path d="M36 8 L60 16 L60 44 C60 58 50 68 36 74 C22 68 12 58 12 44 L12 16 Z"
+          stroke="#00C84C" stroke-width="1.5" fill="none" stroke-linejoin="round"/>
+    <!-- Inner grid (crowd density visualization) -->
+    <rect x="22" y="28" width="5" height="5" rx="1" fill="#00C84C" opacity="0.3"/>
+    <rect x="30" y="28" width="5" height="5" rx="1" fill="#00C84C" opacity="0.6"/>
+    <rect x="38" y="28" width="5" height="5" rx="1" fill="#00C84C" opacity="0.9"/>
+    <rect x="46" y="28" width="5" height="5" rx="1" fill="#E8A000" opacity="0.9"/>
+    <rect x="22" y="36" width="5" height="5" rx="1" fill="#00C84C" opacity="0.6"/>
+    <rect x="30" y="36" width="5" height="5" rx="1" fill="#00C84C" opacity="0.9"/>
+    <rect x="38" y="36" width="5" height="5" rx="1" fill="#E82020" opacity="0.9"/>
+    <rect x="46" y="36" width="5" height="5" rx="1" fill="#E82020" opacity="0.6"/>
+    <rect x="22" y="44" width="5" height="5" rx="1" fill="#E8A000" opacity="0.6"/>
+    <rect x="30" y="44" width="5" height="5" rx="1" fill="#E82020" opacity="0.8"/>
+    <rect x="38" y="44" width="5" height="5" rx="1" fill="#FF1A1A" opacity="0.9"/>
+    <!-- Alert dot -->
+    <circle cx="53" cy="19" r="4" fill="#E82020"/>
+    <circle cx="53" cy="19" r="2" fill="#FF4040"/>
+  </g>
+
+  <!-- Wordmark -->
+  <text x="84" y="60"
+        font-family="'Space Grotesk', sans-serif"
+        font-size="44"
+        font-weight="700"
+        letter-spacing="-0.02em"
+        fill="#C8D8E8">PRAHARI</text>
+
+  <!-- Tagline -->
+  <text x="85" y="82"
+        font-family="'Space Grotesk', sans-serif"
+        font-size="11"
+        font-weight="400"
+        letter-spacing="0.18em"
+        fill="#4A6A84">PREDICT · RESPOND · PREVENT</text>
+
+  <!-- Thin rule under wordmark -->
+  <line x1="84" y1="68" x2="434" y2="68" stroke="#142035" stroke-width="1"/>
+</svg>

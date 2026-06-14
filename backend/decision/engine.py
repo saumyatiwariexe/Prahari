@@ -16,10 +16,14 @@ from decision.interventions import (
 
 
 class DecisionEngine:
-    def __init__(self):
+    def __init__(self, max_level: int = 5):
+        self._max_level = max_level             # cap — levels above this are skipped
         self._fired: set[str] = set()           # zone+level keys already actioned
         self._staged: dict[str, dict] = {}      # L2/L3 interventions pending
         self._pre_warn_zones: set[str] = set()  # zones where PRE_WARN already fired
+
+    def set_max_level(self, max_level: int) -> None:
+        self._max_level = max_level
 
     def evaluate(self, zone_states: dict, predictions: dict) -> list[Intervention]:
         """
@@ -39,7 +43,9 @@ class DecisionEngine:
             key_sos      = f"{zone_id}_SOS"
 
             # L1: fire autonomously, once per zone session
-            if density >= L1_TRIGGER_DENSITY and key_l1 not in self._fired:
+            if (self._max_level >= 1
+                    and density >= L1_TRIGGER_DENSITY
+                    and key_l1 not in self._fired):
                 if zone_id in L1_ACTIONS:
                     action_label, action_msg = L1_ACTIONS[zone_id]
                     iv = Intervention(
@@ -54,7 +60,10 @@ class DecisionEngine:
                     new_interventions.append(iv)
 
             # L2: stage when density crosses L2 threshold
-            if density >= L2_TRIGGER_DENSITY and key_l2 not in self._fired and key_l2 not in self._staged:
+            if (self._max_level >= 2
+                    and density >= L2_TRIGGER_DENSITY
+                    and key_l2 not in self._fired
+                    and key_l2 not in self._staged):
                 if zone_id in L2_ACTIONS:
                     iv = Intervention(
                         zone=zone_id,
@@ -68,7 +77,10 @@ class DecisionEngine:
                     new_interventions.append(iv)
 
             # L3: stage when predicted density in 90s is lethal
-            if pred_90 >= L3_TRIGGER_DENSITY and key_l3 not in self._fired and key_l3 not in self._staged:
+            if (self._max_level >= 3
+                    and pred_90 >= L3_TRIGGER_DENSITY
+                    and key_l3 not in self._fired
+                    and key_l3 not in self._staged):
                 if zone_id in L3_ACTIONS:
                     iv = Intervention(
                         zone=zone_id,
@@ -81,7 +93,9 @@ class DecisionEngine:
                     new_interventions.append(iv)
 
             # PRE_WARN: auto-fire standby alert when density hits pre-warn threshold
-            if density >= PRE_WARN_DENSITY and key_pre_warn not in self._fired:
+            if (self._max_level >= 4
+                    and density >= PRE_WARN_DENSITY
+                    and key_pre_warn not in self._fired):
                 if zone_id in PRE_WARN_ACTIONS:
                     label, msg = PRE_WARN_ACTIONS[zone_id]
                     iv = Intervention(
@@ -97,7 +111,8 @@ class DecisionEngine:
                     new_interventions.append(iv)
 
             # SOS: auto-fire full emergency dispatch only AFTER pre-warn has already fired for this zone
-            if (density >= FAILSAFE_DENSITY
+            if (self._max_level >= 5
+                    and density >= FAILSAFE_DENSITY
                     and zone_id in self._pre_warn_zones
                     and key_sos not in self._fired):
                 if zone_id in SOS_ACTIONS:

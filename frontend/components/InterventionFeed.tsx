@@ -30,9 +30,9 @@ interface Props {
 }
 
 export default function InterventionFeed({ interventions, staged, onConfirm, onCancel }: Props) {
-  const topRef = useRef<HTMLDivElement>(null);
+  const bottomRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    topRef.current?.scrollIntoView({ behavior: "smooth" });
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [interventions.length]);
 
   return (
@@ -54,10 +54,10 @@ export default function InterventionFeed({ interventions, staged, onConfirm, onC
 
       {/* Log */}
       <div className="flex-1 overflow-y-auto scrollbar-thin" style={{ minHeight: 0 }}>
-        <div ref={topRef} />
         <AnimatePresence initial={false}>
           {interventions.map(iv => <LogCard key={iv.id} iv={iv} />)}
         </AnimatePresence>
+        <div ref={bottomRef} />
         {interventions.length === 0 && (
           <div style={{ ...M, padding: "16px 10px", fontSize: 10, color: "#2C4060", letterSpacing: "0.1em" }}>
             NO EVENTS RECORDED

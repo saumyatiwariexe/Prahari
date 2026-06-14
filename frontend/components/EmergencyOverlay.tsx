@@ -1,4 +1,5 @@
 "use client";
+import { useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import type { Intervention } from "@/lib/types";
 
@@ -18,6 +19,13 @@ interface Props {
 }
 
 export default function EmergencyOverlay({ active, sosIntervention, onDismiss }: Props) {
+  // Auto-dismiss after 10s so it doesn't block the rest of the demo
+  useEffect(() => {
+    if (!active) return;
+    const t = setTimeout(() => onDismiss?.(), 10000);
+    return () => clearTimeout(t);
+  }, [active, onDismiss]);
+
   return (
     <AnimatePresence>
       {active && (
