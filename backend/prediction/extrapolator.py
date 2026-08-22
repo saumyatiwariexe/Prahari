@@ -2,7 +2,8 @@
 Rule-based crowd flow predictor.
 Extrapolates per-zone density 30 / 60 / 90 seconds ahead using recent trend + convergence detection.
 """
-from constants import PREDICTION_INTERVALS, density_color, ZONES
+from constants import PREDICTION_INTERVALS
+from config.store import config_store
 
 CONVERGENT_PAIRS = [
     ("P3", "FOB1"),
@@ -18,8 +19,9 @@ class Extrapolator:
     def predict(self, zone_states: dict, density_histories: dict[str, list[float]]) -> dict:
         predictions: dict[str, dict] = {}
         rates = self._compute_rates(density_histories)
+        config = config_store.get()
 
-        for zone_id in ZONES:
+        for zone_id in (z.id for z in config.zones):
             current = zone_states.get(zone_id, {}).get("density", 0.0)
             rate = rates.get(zone_id, 0.0)
             convergence_boost = self._convergence_boost(zone_id, rates)
@@ -31,7 +33,7 @@ class Extrapolator:
                 predicted = max(0.0, min(current + 5.0, raw_pred))
                 zone_pred[f"t{t}"] = {
                     "density": round(predicted, 2),
-                    "color": density_color(predicted),
+                    "color": config.density_color(predicted),
                 }
             predictions[zone_id] = zone_pred
 

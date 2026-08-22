@@ -9,7 +9,7 @@ from typing import Iterator
 from ultralytics import YOLO
 
 from vision.zone_map import point_to_zone
-from constants import ZONES
+from config.store import config_store
 
 _model: YOLO | None = None
 
@@ -28,7 +28,7 @@ def detect_frame(frame: np.ndarray) -> dict[str, int]:
     model = _get_model()
     results = model.track(frame, persist=True, classes=[0], verbose=False)
 
-    zone_counts: dict[str, int] = {z: 0 for z in ZONES}
+    zone_counts: dict[str, int] = {z.id: 0 for z in config_store.get().zones}
 
     if results and results[0].boxes is not None:
         boxes = results[0].boxes.xywh.cpu().numpy()

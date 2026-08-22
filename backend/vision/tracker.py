@@ -2,35 +2,35 @@
 Computes per-zone density (persons/m²) and flow vectors from raw person counts.
 """
 from collections import deque
-from constants import ZONES, density_color
+from config.store import config_store
 
 HISTORY_LEN = 15
 
 
 class ZoneTracker:
     def __init__(self):
-        self._history: dict[str, deque[float]] = {
-            z: deque(maxlen=HISTORY_LEN) for z in ZONES
-        }
+        self._history: dict[str, deque[float]] = {}
 
     def update(self, counts: dict[str, int]) -> dict:
         """
         Accepts raw person counts per zone.
         Returns zone state dict ready for broadcast.
         """
+        config = config_store.get()
         zone_states = {}
 
         for zone_id, count in counts.items():
-            area = ZONES[zone_id]["area_m2"]
+            zone = config.zone_by_id(zone_id)
+            area = zone.area_m2 if zone else 1.0
             density = count / area
-            self._history[zone_id].append(density)
+            self._history.setdefault(zone_id, deque(maxlen=HISTORY_LEN)).append(density)
 
             flow = self._flow_vector(zone_id)
             zone_states[zone_id] = {
                 "density": round(density, 2),
                 "count": count,
-                "color": density_color(density),
-                "name": ZONES[zone_id]["name"],
+                "color": config.density_color(density),
+                "name": zone.label if zone else zone_id,
                 "flow_vector": flow,
             }
 
