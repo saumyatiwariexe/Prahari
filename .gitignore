@@ -23,6 +23,7 @@ venv/
 .venv/
 env/
 *.env
+backend/config/station.config.json
 
 # Models — downloaded automatically by ultralytics on first run
 *.pt
