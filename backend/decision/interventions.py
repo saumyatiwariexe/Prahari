@@ -46,6 +46,11 @@ def _now() -> str:
     return datetime.datetime.now().strftime("%H:%M:%S")
 
 
+# L1 = zero-physical-force actions (PA/signage) — a duty officer's existing authority to
+# broadcast these announcements, executed faster than manual relay. Auto-fires, no confirm.
+# L2 = mechanical/access actions (escalator direction, gate throughput) — these change the
+# physical environment a crowd is moving through, so they always require an operator's
+# explicit confirm. There is no silent auto-execution at this tier.
 L1_ACTIONS = {
     "FOB1": ("PA-01 Issued",
              "Foot Over Bridge 1 is experiencing heavy congestion. "
@@ -53,20 +58,17 @@ L1_ACTIONS = {
     "FOB2": ("PA-02 Issued",
              "Please proceed via Gate A for Platform access. "
              "Foot Over Bridge 2 operating at reduced capacity."),
-    "P3":   ("ESC-1 Direction",
-             "Escalator 1 set to EXIT ONLY — crowd flow management active."),
-    "P4":   ("ESC-2 Direction",
-             "Escalator 2 set to EXIT ONLY — crowd flow management active."),
     "CONC": ("PA-03 Issued",
              "Main Concourse is crowded. Passengers please spread to all available gates."),
-    "GATE_B": ("GATE_B Flow",
-               "Gate B temporarily operating at 50% throughput to regulate concourse density."),
 }
 
 L2_ACTIONS = {
-    "FOB1": "Gate B throughput reduction to 50%. Auto-executing in 10 seconds.",
-    "FOB2": "Gate A throughput reduction to 50%. Auto-executing in 10 seconds.",
-    "CONC": "RPF deployment to Main Concourse requested. Auto-notifying in 10 seconds.",
+    "FOB1":   "Gate B throughput reduction to 50% — requires operator confirmation.",
+    "FOB2":   "Gate A throughput reduction to 50% — requires operator confirmation.",
+    "CONC":   "RPF deployment to Main Concourse requested — requires operator confirmation.",
+    "P3":     "Escalator 1 direction reversal to EXIT ONLY — requires operator confirmation.",
+    "P4":     "Escalator 2 direction reversal to EXIT ONLY — requires operator confirmation.",
+    "GATE_B": "Gate B throughput reduction to 50% — requires operator confirmation.",
 }
 
 L3_ACTIONS = {

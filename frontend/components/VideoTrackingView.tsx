@@ -225,7 +225,8 @@ export default function VideoTrackingView({ videoSrc, persons, zones, loading, s
             flexShrink: 0, display: "flex", alignItems: "center", gap: 8,
           }}>
             <span style={{ color: "#00C84C60" }}>▌ AI TRACKING — YOLOv8m + SAHI</span>
-            <span style={{ marginLeft: "auto", color: "#00C84C40" }}>{persons.length} DET</span>
+            <span style={{ color: "#E82020" }}>● LIVE INFERENCE</span>
+            <span style={{ marginLeft: "auto", color: "#00C84C40" }}>{persons.length} DET · CPU ~1.5–5 FPS</span>
           </div>
           <div style={{ flex: 1, minHeight: 0, position: "relative", background: "#030806" }}>
             {/* Canvas always rendered so RAF can draw as soon as video is ready */}

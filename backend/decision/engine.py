@@ -1,7 +1,9 @@
 """
-Graded autonomous intervention decision engine.
-L1 fires immediately. L2 has a cancel window. L3 requires explicit confirm.
-Gate closure (L3) NEVER auto-fires.
+Graded intervention decision engine.
+L1 (PA/signage — zero physical force) fires immediately, framed as a duty officer's
+existing authority executed faster than manual relay. L2 (escalator/gate — mechanical
+actions) and L3 (platform closure) always require an explicit operator confirm; neither
+ever auto-fires.
 """
 import time
 from constants import (
@@ -42,7 +44,7 @@ class DecisionEngine:
             key_pre_warn = f"{zone_id}_PRE_WARN"
             key_sos      = f"{zone_id}_SOS"
 
-            # L1: fire autonomously, once per zone session
+            # L1: fires immediately, once per zone session — informational only
             if (self._max_level >= 1
                     and density >= L1_TRIGGER_DENSITY
                     and key_l1 not in self._fired):
@@ -128,17 +130,14 @@ class DecisionEngine:
                     self._fired.add(key_sos)
                     new_interventions.append(iv)
 
-        # Auto-execute L2 after countdown
+        # L2 items never auto-execute — countdown_remaining counts elapsed time pending
+        # (capped) purely as an urgency indicator for the operator. Only confirm()/cancel()
+        # resolve a staged L2 item.
         now = time.time()
         for key, entry in list(self._staged.items()):
             if "_L2" in key:
                 elapsed = now - entry["staged_at"]
-                remaining = max(0, L2_COUNTDOWN_SECONDS - int(elapsed))
-                entry["iv"].countdown_remaining = remaining
-                if elapsed >= L2_COUNTDOWN_SECONDS:
-                    entry["iv"].status = "confirmed"
-                    self._fired.add(key)
-                    del self._staged[key]
+                entry["iv"].countdown_remaining = min(L2_COUNTDOWN_SECONDS, int(elapsed))
 
         return new_interventions
 

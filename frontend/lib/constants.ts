@@ -15,17 +15,17 @@ export const ZONE_META: Record<string, { label: string; shortLabel: string }> = 
 };
 
 export const COLOR_MAP: Record<string, string> = {
-  green:    "rgba(0,200,76,0.08)",
-  amber:    "rgba(232,160,0,0.12)",
-  red:      "rgba(232,32,32,0.18)",
-  critical: "rgba(232,32,32,0.35)",
+  green:    "rgba(41,255,140,0.08)",
+  amber:    "rgba(255,176,32,0.12)",
+  red:      "rgba(255,59,59,0.18)",
+  critical: "rgba(255,26,26,0.32)",
 };
 
 export const BORDER_MAP: Record<string, string> = {
-  green:    "#00C84C",
-  amber:    "#E8A000",
-  red:      "#E82020",
-  critical: "#FF2020",
+  green:    "#29FF8C",
+  amber:    "#FFB020",
+  red:      "#FF3B3B",
+  critical: "#FF1A1A",
 };
 
 export const TEXT_MAP: Record<string, string> = {
@@ -36,12 +36,22 @@ export const TEXT_MAP: Record<string, string> = {
 };
 
 export const LEVEL_COLORS: Record<number, string> = {
-  1: "#00C84C",
-  2: "#E8A000",
-  3: "#E82020",
-  4: "#FF6B00",  // PRE_WARN — deep orange
+  1: "#29FF8C",
+  2: "#FFB020",
+  3: "#FF3B3B",
+  4: "#FF7A1A",  // PRE_WARN — deep orange
   5: "#FF1A1A",  // SOS — full emergency red
 };
+
+// Density thresholds that gate each escalation level (README "Density Thresholds Reference").
+// Doubles as the approach-scope's range-ring scale — closer to center = more severe.
+export const DENSITY_THRESHOLDS = [
+  { value: 5.0, level: "L1",  label: "L1 · AUTO" },
+  { value: 6.0, level: "L2",  label: "L2 · STAGED" },
+  { value: 7.0, level: "PRE", label: "PRE-WARN" },
+  { value: 7.5, level: "L3",  label: "L3 · CONFIRM" },
+  { value: 8.0, level: "SOS", label: "SOS" },
+] as const;
 
 export const WS_URL  = process.env.NEXT_PUBLIC_WS_URL  ?? "ws://localhost:8000/ws/live";
 export const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";

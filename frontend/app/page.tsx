@@ -190,10 +190,11 @@ export default function Home() {
     } else if (iv.level === 2 && (iv.status === "staged" || iv.status === "confirmed")) {
       if (iv.zone === "FOB1" && gateStates["GATE_B"] === "open") gateStates["GATE_B"] = "restricted";
       if (iv.zone === "FOB2" && gateStates["GATE_A"] === "open") gateStates["GATE_A"] = "restricted";
+      if (iv.zone === "GATE_B" && gateStates["GATE_B"] === "open") gateStates["GATE_B"] = "restricted";
     }
   }
-  const esc1Reversed = allInterventions.some(iv => iv.level === 1 && iv.zone === "P3" && iv.status !== "cancelled");
-  const esc2Reversed = allInterventions.some(iv => iv.level === 1 && iv.zone === "P4" && iv.status !== "cancelled");
+  const esc1Reversed = allInterventions.some(iv => iv.level === 2 && iv.zone === "P3" && iv.status !== "cancelled");
+  const esc2Reversed = allInterventions.some(iv => iv.level === 2 && iv.zone === "P4" && iv.status !== "cancelled");
   const rpfActive    = allInterventions.some(iv => iv.level === 2 && iv.zone === "CONC" && iv.status !== "cancelled");
   const hasCritical  = Object.values(zones).some(z => z.color === "critical");
 
@@ -341,6 +342,7 @@ export default function Home() {
                     <div className="panel" style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column", position: "relative" }}>
                       <div className="panel-header" style={{ display: "flex", alignItems: "center" }}>
                         <span>▌ NEW DELHI RAILWAY STATION — NDLS · FEB 15 2025</span>
+                        <span style={{ marginLeft: 8, color: "#4A6A84" }}>◆ SCENARIO REPLAY</span>
                         {data?.crowdguard?.predictions && (
                           <span style={{ marginLeft: "auto", color: "#1A3A58" }}>⟳ +90s FORECAST</span>
                         )}

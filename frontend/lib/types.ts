@@ -1,4 +1,5 @@
 export type DensityColor = "green" | "amber" | "red" | "critical";
+export type GateState = "open" | "restricted" | "closed";
 export type SystemStatus = "normal" | "monitoring" | "active" | "critical";
 export type InterventionStatus = "fired" | "staged" | "pending_confirm" | "cancelled" | "confirmed";
 export type InterventionLevel = 1 | 2 | 3 | 4 | 5;

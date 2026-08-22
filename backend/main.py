@@ -58,14 +58,6 @@ def _update_hist(zone_states: dict):
         _density_hist[zid] = buf[-_MAX_HIST:]
 
 
-def _sync_log_statuses(engine):
-    """Propagate auto-confirmed L2 statuses back into the all_interventions log dicts."""
-    staged_ids = {iv.id for iv in engine.get_staged()}
-    for iv_dict in all_interventions:
-        if iv_dict["status"] == "staged" and iv_dict["id"] not in staged_ids:
-            iv_dict["status"] = "confirmed"
-
-
 def _do_reset(speed: float = 2.0, max_level: int = 5):
     """Shared reset logic for demo_start and demo_reset."""
     global mode
@@ -236,7 +228,6 @@ async def _broadcast_tick():
 
         for iv in engine_cg.evaluate(zone_cg, predictions):
             all_interventions.append({**iv.to_dict(), "side": "crowdguard"})
-        _sync_log_statuses(engine_cg)
 
         payload = {
             "elapsed": round(elapsed, 1),
@@ -271,7 +262,6 @@ async def _broadcast_tick():
         if elapsed >= HUMAN_RESPONSE_TIME:
             for iv in engine_human.evaluate(zone_human, {}):
                 all_interventions.append({**iv.to_dict(), "side": "human"})
-        _sync_log_statuses(engine_cg)
 
         payload = {
             "elapsed": round(elapsed, 1),

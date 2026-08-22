@@ -141,7 +141,7 @@ function StagedCard({ iv, onConfirm, onCancel }: {
       {isL2 && iv.countdown_remaining != null && (
         <div style={{ marginBottom: 7 }}>
           <div style={{ display: "flex", justifyContent: "space-between", fontSize: 9, color: "#4A6A84", marginBottom: 3 }}>
-            <span>AUTO-EXEC IN</span>
+            <span>AWAITING OPERATOR CONFIRM</span>
             <span style={{ color: "#E8A000" }}>{iv.countdown_remaining}s</span>
           </div>
           <div style={{ height: 3, background: "#0E1E30" }}>

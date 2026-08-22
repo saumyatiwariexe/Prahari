@@ -1,0 +1,79 @@
+{
+  "title": "Choose the visual world — Prahari redesign",
+  "question": "The roll assigned Approach Control Scope. Keep it, take an alternate, or re-roll.",
+  "options": [
+    {
+      "id": "assigned",
+      "label": "Approach Control Scope",
+      "kicker": "THE ROLL",
+      "lineage": "Air-traffic-control approach/radar scopes",
+      "thesis": "The station scoped like inbound air traffic — density plotted as track and closure rate, not just a count.",
+      "palette": ["#00FF5A", "#050806", "#E8A000", "#FF2020", "#0A2010"],
+      "materials": ["vector phosphor sweep", "concentric range rings", "glass scope bezel"],
+      "viewport": "Full-bleed circular scope as hero: zones plotted as contacts at a bearing/range where range maps to severity, rings marked at the five real density thresholds, a rotating sweep, predicted 90s trajectory drawn as an extrapolated vector past the rings it will cross, side rail as a radar-style contact log for the intervention feed.",
+      "risk": "Sweep radar is a familiar security-dashboard trope; only lands if the ring-to-threshold mapping reads instantly, not decoratively.",
+      "raised": [
+        { "from": "challenger-nixie", "raise": "Every hard numeric readout (density, countdown, response-time ms) renders as a tactile stacked-digit instrument, not flat sans numerals." },
+        { "from": "declined-precisionist", "raise": "Panel chrome is flat, hard-edged planes under one fixed light source — no glassmorphism or soft blur, only true phosphor glow on the scope itself." }
+      ]
+    },
+    {
+      "id": "model-pick",
+      "label": "Mission Control Telemetry",
+      "kicker": "IMPECCABLE’S PICK",
+      "lineage": "ISRO / space-agency mission control telemetry rooms",
+      "thesis": "The console reads like the room behind a launch broadcast — a mission clock counting the response, not the incident.",
+      "palette": ["#050A14", "#3AA0FF", "#FF9933", "#128807", "#E8A000"],
+      "materials": ["telemetry strip readouts", "mission-clock typography", "trajectory plot"],
+      "viewport": "T+ mission clock as hero, flanked by live per-zone telemetry strips, a central 90-second forecast trajectory plot standing in for a launch trajectory graph.",
+      "risk": "The safest-to-love direction here — instantly reads as ‘serious national infrastructure’ to a judge audience, but structurally less daring than the scope's spatial metaphor."
+    },
+    {
+      "id": "challenger-nixie",
+      "label": "Nixie Instrument Bank",
+      "verdict": "competitive",
+      "lineage": "Cold-War-era nixie-tube lab instrumentation",
+      "thesis": "Every metric as a glowing physical digit stack — numbers you can watch tick, not just read.",
+      "palette": ["#101010", "#FF8A2A", "#3A3A3A"],
+      "materials": ["glass digit envelopes", "engraved panel labels"],
+      "case": "Fuses well for raw numeric clarity on density/countdown/response-time figures, but a bank of independent tubes can't natively carry the zone-to-zone spatial flow this product's mechanism depends on — loses narrowly on product clarity against the scope's spatial read.",
+      "risk": "Reads as a measuring instrument, not a system that visibly acts."
+    },
+    {
+      "id": "challenger-ascii",
+      "label": "Glyph-Density Render",
+      "verdict": "declined",
+      "lineage": "live scenes rendered as typewriter/glyph density",
+      "case": "A life-safety console needs its exact density figures instantly legible; rendering the scene as ambiguous glyph art trades precision for texture — wrong tradeoff here.",
+      "hero": "https://impeccable.style/worlds/cards/medium-native-ascii-live-scene-render-hero.webp"
+    },
+    {
+      "id": "declined-precisionist",
+      "label": "Precisionist Industrial Plate",
+      "verdict": "declined",
+      "lineage": "Precisionist industrial paintings — grain elevators, flat planes, raking light",
+      "case": "A static composition of overlapping painted planes can't carry second-by-second live state changes this console needs.",
+      "kept": "Hard-edged unmodulated planes under one raking light — no gradients, no soft glow, no glassmorphism.",
+      "hero": "https://impeccable.style/worlds/cards/design-canon-precisionist-industrial-plate-hero.webp"
+    },
+    {
+      "id": "challenger-sneaker",
+      "label": "Sneaker Archive Wall",
+      "verdict": "declined",
+      "lineage": "collector sneaker-box archive walls",
+      "case": "Retail/collector object display has no mechanism-level relationship to a predictive safety system — the resonance is decorative only."
+    }
+  ],
+  "reroll": { "registers": ["safer", "bolder"] },
+  "buildPath": { "value": "code", "toggle": false },
+  "canon": true,
+  "canonCard": {
+    "label": "Dark Ops Dashboard",
+    "thesis": "The neon-on-navy SaaS security dashboard this category ships by default, executed impeccably.",
+    "palette": ["#0D1117", "#1A90FF", "#00C84C", "#E8A000", "#E82020"],
+    "materials": ["glassmorphic panels", "glowing borders", "mono data type"],
+    "viewport": "Familiar three-pane admin layout: nav/status header, main panel, side feed — essentially the current build.",
+    "risk": "Indistinguishable from any other ‘AI security dashboard’ — the rut this reset exists to leave."
+  },
+  "steer": true
+}

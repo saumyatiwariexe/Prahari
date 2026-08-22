@@ -25,6 +25,13 @@ export default function SplitScreen({ data }: Props) {
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100%", gap: 6 }}>
 
+      <div style={{
+        ...M, flexShrink: 0, textAlign: "center",
+        fontSize: 9, color: "#2C4060", letterSpacing: "0.1em", padding: "2px 0",
+      }}>
+        TIMELINE VALIDATION — REPLAYED AGAINST THE DOCUMENTED NDLS INCIDENT RECORD, FEB 15 2025
+      </div>
+
       <div style={{ flex: 1, minHeight: 0, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
 
         {/* Human-operated */}
@@ -106,7 +113,7 @@ export default function SplitScreen({ data }: Props) {
           </div>
         </div>
 
-        {/* Prahari autonomous */}
+        {/* Prahari — machine-speed response */}
         <div style={{
           display: "flex", flexDirection: "column",
           background: "#080C14",
@@ -125,9 +132,9 @@ export default function SplitScreen({ data }: Props) {
               style={{ width: 7, height: 7, borderRadius: "50%", background: "#00C84C" }}
             />
             <span style={{ fontSize: 11, color: "#00C84C", letterSpacing: "0.12em" }}>
-              PRAHARI — AUTONOMOUS AI
+              PRAHARI — FORESIGHT SYSTEM
             </span>
-            <span style={{ fontSize: 10, color: "#2C4060", marginLeft: "auto" }}>AI-OPERATED</span>
+            <span style={{ fontSize: 10, color: "#2C4060", marginLeft: "auto" }}>MACHINE-SPEED</span>
           </div>
 
           <div className="scrollbar-thin" style={{ flex: 1, padding: 6, position: "relative", minHeight: 0, overflowY: "auto" }}>
