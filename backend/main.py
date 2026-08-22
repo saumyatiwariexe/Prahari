@@ -23,6 +23,8 @@ from fastapi.staticfiles import StaticFiles
 
 from constants import WEBSOCKET_INTERVAL_MS, ZONES
 from decision.engine import DecisionEngine
+from config.store import config_store
+from config.schema import StationConfigInput
 from prediction.extrapolator import Extrapolator
 from vision.video_pipeline import VideoPipeline
 from demo.scenario_runner import ScenarioRunner, get_frame, L1_FIRE_TIME, CRUSH_TIME_HUMAN, HUMAN_RESPONSE_TIME
@@ -196,6 +198,22 @@ async def cancel(iv_id: str):
                 iv_dict["status"] = "cancelled"
                 break
     return {"status": "cancelled" if ok else "not_found"}
+
+
+# ── Station configuration endpoints ───────────────────────────────────────────
+@app.get("/config")
+async def get_config():
+    return config_store.get()
+
+
+@app.put("/config")
+async def update_config(body: StationConfigInput):
+    return config_store.update(body)
+
+
+@app.post("/config/reset")
+async def reset_config():
+    return config_store.reset()
 
 
 # ── Broadcast loop ────────────────────────────────────────────────────────────
