@@ -15,13 +15,11 @@ const STATUS_LABEL: Record<string, string> = {
 export default function ZoneChart({ zones, historyMap }: Props) {
   return (
     <div>
-      {/* Column header */}
-      <div style={{
+      <div className="scope" style={{
         display: "flex", alignItems: "center",
-        padding: "3px 10px",
-        fontFamily: "'Share Tech Mono', monospace",
-        fontSize: 9, color: "#2C4060", letterSpacing: "0.1em",
-        borderBottom: "1px solid #0A1525",
+        padding: "4px 12px",
+        fontSize: 9, color: "var(--text-faint)", letterSpacing: "0.1em",
+        borderBottom: "1px solid var(--hair-dim)",
       }}>
         <span style={{ width: 56 }}>ZONE</span>
         <span style={{ width: 72, textAlign: "right" }}>DENSITY</span>
@@ -60,21 +58,20 @@ function ZoneRow({ label, state, history }: { label: string; state: ZoneState; h
   }).join(" ");
 
   return (
-    <div style={{
+    <div className="scope" style={{
       display: "flex", alignItems: "center",
-      padding: "4px 10px",
-      borderBottom: "1px solid #0A1525",
-      background: isCrit ? "rgba(232,32,32,0.07)" : "transparent",
-      fontFamily: "'Share Tech Mono', monospace",
+      padding: "5px 12px",
+      borderBottom: "1px solid var(--hair-dim)",
+      background: isCrit ? "rgba(255,26,26,0.06)" : "transparent",
       fontSize: 11,
     }}>
       <span style={{ color, width: 56, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
         {label}
       </span>
-      <span style={{ color, width: 72, textAlign: "right", fontWeight: "bold" }}>
+      <span style={{ color, width: 72, textAlign: "right", fontWeight: 700 }}>
         {state.density.toFixed(2)}/m²
       </span>
-      <span style={{ color: "#4A6A84", width: 38, textAlign: "right" }}>
+      <span style={{ color: "var(--text-mute)", width: 38, textAlign: "right" }}>
         {state.count}
       </span>
       <div style={{ flex: 1, display: "flex", justifyContent: "center" }}>
@@ -86,7 +83,7 @@ function ZoneRow({ label, state, history }: { label: string; state: ZoneState; h
             )}
           </svg>
         ) : (
-          <span style={{ color: "#2C4060" }}>——</span>
+          <span style={{ color: "var(--text-faint)" }}>——</span>
         )}
       </div>
       <span style={{ color, width: 28, textAlign: "right", letterSpacing: "0.05em" }}>

@@ -12,9 +12,8 @@ interface Props {
   source: "platform" | "aerial";
 }
 
-const M: React.CSSProperties = { fontFamily: "'Share Tech Mono', monospace" };
-
 const LERP = 0.42; // per-frame lerp speed — at 60fps, box reaches target in ~5 frames (~80ms)
+const SWEEP = "#29FF8C";
 
 /** Centroid distance between two boxes (normalized coords) */
 function centDist(a: PersonBbox, b: PersonBbox) {
@@ -97,8 +96,8 @@ export default function VideoTrackingView({ videoSrc, persons, zones, loading, s
 
       ctx.drawImage(video, 0, 0, W, H);
 
-      // Subtle green scan-line tint
-      ctx.fillStyle = "rgba(0,200,76,0.03)";
+      // Subtle phosphor scan-line tint
+      ctx.fillStyle = "rgba(41,255,140,0.03)";
       ctx.fillRect(0, 0, W, H);
 
       // Lerp animated positions toward latest targets each frame
@@ -112,44 +111,37 @@ export default function VideoTrackingView({ videoSrc, persons, zones, loading, s
         const w = (p.x2 - p.x1) * W;
         const h = (p.y2 - p.y1) * H;
 
-        // Box
-        ctx.strokeStyle = "#00C84C";
+        ctx.strokeStyle = SWEEP;
         ctx.strokeRect(x, y, w, h);
 
         // Corner ticks (OpenCV aesthetic)
         const tk = Math.min(8, w * 0.25, h * 0.25);
-        ctx.fillStyle = "#00C84C";
+        ctx.fillStyle = SWEEP;
         [[x,y],[x+w,y],[x,y+h],[x+w,y+h]].forEach(([cx,cy]) => {
           ctx.fillRect(cx - 1, cy - 1, 2, 2);
         });
         ctx.beginPath();
-        // TL
         ctx.moveTo(x, y + tk); ctx.lineTo(x, y); ctx.lineTo(x + tk, y);
-        // TR
         ctx.moveTo(x + w - tk, y); ctx.lineTo(x + w, y); ctx.lineTo(x + w, y + tk);
-        // BL
         ctx.moveTo(x, y + h - tk); ctx.lineTo(x, y + h); ctx.lineTo(x + tk, y + h);
-        // BR
         ctx.moveTo(x + w - tk, y + h); ctx.lineTo(x + w, y + h); ctx.lineTo(x + w, y + h - tk);
-        ctx.strokeStyle = "#00FF5A";
+        ctx.strokeStyle = "#7DFFB8";
         ctx.lineWidth = 1;
         ctx.stroke();
 
-        // ID label
         if (w > 20) {
-          ctx.fillStyle = "rgba(0,200,76,0.85)";
+          ctx.fillStyle = "rgba(41,255,140,0.85)";
           ctx.fillRect(x, y - 13, 28, 12);
-          ctx.fillStyle = "#000";
+          ctx.fillStyle = "#04120B";
           ctx.font = "bold 8px monospace";
           ctx.fillText(`P${i + 1}`, x + 3, y - 3);
         }
       });
 
-      // Count overlay (top-left)
       const label = `${personsRef.current.length} PERSONS`;
-      ctx.fillStyle = "rgba(0,0,0,0.65)";
+      ctx.fillStyle = "rgba(4,18,11,0.75)";
       ctx.fillRect(6, 6, label.length * 6.5 + 10, 18);
-      ctx.fillStyle = "#00C84C";
+      ctx.fillStyle = SWEEP;
       ctx.font = "bold 10px monospace";
       ctx.fillText(label, 11, 19);
 
@@ -167,79 +159,69 @@ export default function VideoTrackingView({ videoSrc, persons, zones, loading, s
 
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100%", minHeight: 0 }}>
-      {/* Split panels */}
       <div style={{ flex: 1, minHeight: 0, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 4 }}>
 
-        {/* Left: Raw feed */}
         <div style={{ display: "flex", flexDirection: "column", minHeight: 0 }}>
-          <div style={{
-            ...M, fontSize: 9, color: "#2C4060", letterSpacing: "0.12em",
-            padding: "3px 8px", background: "#080C14", borderBottom: "1px solid #0E1E30",
+          <div className="scope" style={{
+            fontSize: 9, color: "var(--text-faint)", letterSpacing: "0.12em",
+            padding: "4px 10px", background: "var(--panel-2)", borderBottom: "1px solid var(--hair-dim)",
             flexShrink: 0,
           }}>
-            ▌ RAW CCTV — {source === "aerial" ? "AERIAL VIEW" : "PLATFORM CAM"}
+            RAW CCTV — {source === "aerial" ? "AERIAL VIEW" : "PLATFORM CAM"}
           </div>
-          <div style={{ flex: 1, minHeight: 0, position: "relative", background: "#06080E" }}>
-            {/* Always rendered — display:none prevents canplay in some browsers */}
+          <div style={{ flex: 1, minHeight: 0, position: "relative", background: "var(--bg)" }}>
             <video
               ref={videoRef}
               src={videoSrc}
               autoPlay loop muted playsInline
               style={{ width: "100%", height: "100%", objectFit: "cover", position: "absolute", inset: 0 }}
             />
-            {/* Overlay hides black frame until playback confirmed */}
             {!hasVideo && (
               <div style={{
-                position: "absolute", inset: 0, background: "#06080E", zIndex: 2,
+                position: "absolute", inset: 0, background: "var(--bg)", zIndex: 2,
                 display: "flex", alignItems: "center", justifyContent: "center",
               }}>
                 <motion.div
                   animate={{ opacity: [0.4, 1, 0.4] }}
                   transition={{ duration: 1.4, repeat: Infinity }}
-                  style={{ ...M, fontSize: 10, color: "#1A3050", letterSpacing: "0.1em" }}
+                  className="scope"
+                  style={{ fontSize: 10, color: "var(--text-faint)", letterSpacing: "0.1em" }}
                 >
                   LOADING FEED...
                 </motion.div>
               </div>
             )}
-            {/* LIVE badge */}
-            <div style={{
-              position: "absolute", top: 8, left: 8,
-              display: "flex", alignItems: "center", gap: 5,
-            }}>
+            <div style={{ position: "absolute", top: 8, left: 8, display: "flex", alignItems: "center", gap: 5 }}>
               <motion.div
-                style={{ width: 6, height: 6, borderRadius: "50%", background: "#E82020" }}
+                style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--red)" }}
                 animate={{ opacity: [1, 0.2, 1] }}
                 transition={{ duration: 1, repeat: Infinity }}
               />
-              <span style={{ ...M, fontSize: 9, color: "#E82020", letterSpacing: "0.1em" }}>LIVE</span>
+              <span className="scope" style={{ fontSize: 9, color: "var(--red)", letterSpacing: "0.1em" }}>LIVE</span>
             </div>
           </div>
         </div>
 
-        {/* Right: AI Tracking */}
         <div style={{ display: "flex", flexDirection: "column", minHeight: 0 }}>
-          <div style={{
-            ...M, fontSize: 9, letterSpacing: "0.12em",
-            padding: "3px 8px", background: "#06100A", borderBottom: "1px solid #00C84C20",
+          <div className="scope" style={{
+            fontSize: 9, letterSpacing: "0.12em",
+            padding: "4px 10px", background: "var(--panel-2)", borderBottom: "1px solid var(--hair-dim)",
             flexShrink: 0, display: "flex", alignItems: "center", gap: 8,
           }}>
-            <span style={{ color: "#00C84C60" }}>▌ AI TRACKING — YOLOv8m + SAHI</span>
-            <span style={{ color: "#E82020" }}>● LIVE INFERENCE</span>
-            <span style={{ marginLeft: "auto", color: "#00C84C40" }}>{persons.length} DET · CPU ~1.5–5 FPS</span>
+            <span style={{ color: "var(--sweep-dim)" }}>AI TRACKING — YOLOv8m + SAHI</span>
+            <span style={{ color: "var(--red)" }}>● LIVE INFERENCE</span>
+            <span style={{ marginLeft: "auto", color: "var(--text-faint)" }}>{persons.length} DET · CPU ~1.5–5 FPS</span>
           </div>
-          <div style={{ flex: 1, minHeight: 0, position: "relative", background: "#030806" }}>
-            {/* Canvas always rendered so RAF can draw as soon as video is ready */}
+          <div style={{ flex: 1, minHeight: 0, position: "relative", background: "#020504" }}>
             <canvas
               ref={canvasRef}
               width={640} height={480}
               style={{ width: "100%", height: "100%", display: "block" }}
             />
 
-            {/* Loading overlay while pipeline warms up */}
             {loading && (
               <div style={{
-                position: "absolute", inset: 0, background: "rgba(3,8,6,0.85)",
+                position: "absolute", inset: 0, background: "rgba(2,5,4,0.85)",
                 display: "flex", flexDirection: "column",
                 alignItems: "center", justifyContent: "center", gap: 10,
               }}>
@@ -248,12 +230,12 @@ export default function VideoTrackingView({ videoSrc, persons, zones, loading, s
                   transition={{ duration: 1.2, repeat: Infinity, ease: "linear" }}
                   style={{
                     width: 22, height: 22,
-                    border: "2px solid #0A2010",
-                    borderTop: "2px solid #00C84C",
+                    border: "2px solid var(--hair)",
+                    borderTop: "2px solid var(--sweep)",
                     borderRadius: "50%",
                   }}
                 />
-                <span style={{ ...M, fontSize: 10, color: "#00C84C80", letterSpacing: "0.12em" }}>
+                <span className="scope" style={{ fontSize: 10, color: "var(--sweep-dim)", letterSpacing: "0.12em" }}>
                   LOADING MODEL...
                 </span>
               </div>
@@ -262,18 +244,17 @@ export default function VideoTrackingView({ videoSrc, persons, zones, loading, s
         </div>
       </div>
 
-      {/* Stats bar */}
-      <div style={{
+      <div className="scope" style={{
         flexShrink: 0,
         display: "flex", alignItems: "center", gap: 0,
-        background: "#080C14", borderTop: "1px solid #0E1E30",
-        ...M, fontSize: 10,
+        background: "var(--panel-2)", borderTop: "1px solid var(--hair-dim)",
+        fontSize: 10,
       }}>
         <StatCell label="PERSONS" value={String(count)} color={color} />
         <StatCell label="DENSITY" value={`${density.toFixed(2)}/m²`} color={color} />
         <StatCell label="STATUS" value={p1?.color?.toUpperCase() ?? "—"} color={color} />
-        <StatCell label="SOURCE" value={source.toUpperCase()} color="#4A6A84" />
-        <StatCell label="MODEL" value="YOLOv8m" color="#2C4060" />
+        <StatCell label="SOURCE" value={source.toUpperCase()} color="var(--text-mute)" />
+        <StatCell label="MODEL" value="YOLOv8m" color="var(--text-faint)" />
       </div>
     </div>
   );
@@ -282,10 +263,10 @@ export default function VideoTrackingView({ videoSrc, persons, zones, loading, s
 function StatCell({ label, value, color }: { label: string; value: string; color: string }) {
   return (
     <div style={{
-      padding: "5px 14px", borderRight: "1px solid #0E1E30",
+      padding: "6px 14px", borderRight: "1px solid var(--hair-dim)",
       display: "flex", flexDirection: "column", gap: 2,
     }}>
-      <span style={{ fontSize: 8, color: "#1A3050", letterSpacing: "0.1em" }}>{label}</span>
+      <span style={{ fontSize: 8, color: "var(--text-faint)", letterSpacing: "0.1em" }}>{label}</span>
       <span style={{ fontSize: 12, color, letterSpacing: "0.06em" }}>{value}</span>
     </div>
   );

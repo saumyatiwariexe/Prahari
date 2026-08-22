@@ -12,11 +12,12 @@
   --hair:        #12252A;
   --hair-dim:    #0B1A1D;
 
-  /* Phosphor-tinted text — never plain gray, always drifting toward the sweep hue */
+  /* Phosphor-tinted text — never plain gray, always drifting toward the sweep hue.
+     Every tier clears WCAG 4.5:1 against --bg (verified: dim 7.68, mute 6.51, faint 4.81). */
   --text:        #D8F5E8;
   --text-dim:    #7FA89C;
-  --text-mute:   #4C7268;
-  --text-faint:  #2C433D;
+  --text-mute:   #6B9C8D;
+  --text-faint:  #568573;
 
   /* Committed accent: sweep green carries the identity */
   --sweep:       #29FF8C;
@@ -77,3 +78,25 @@ body {
 
 button { font: inherit; color: inherit; }
 button:disabled { cursor: not-allowed; opacity: 0.5; }
+
+.btn-seg {
+  cursor: pointer;
+  transition: filter 0.12s ease;
+}
+.btn-seg:hover:not(:disabled) { filter: brightness(1.35); }
+.btn-seg:active:not(:disabled) { filter: brightness(0.8); }
+
+/* This console is instrumentation for a desktop-class display — a control-room
+   monitor or a demo laptop, never a phone. Lock narrow viewports instead of
+   rendering a silently broken squeeze of the scope and contact log. */
+.desktop-lock { display: none; }
+@media (max-width: 1023px) {
+  .app-shell { display: none; }
+  .desktop-lock { display: flex; }
+}
+
+/* Header never wraps — the station ident is flavor text, first to go when tight. */
+header { flex-wrap: nowrap !important; overflow: hidden; }
+@media (max-width: 1299px) {
+  .station-ident { display: none !important; }
+}

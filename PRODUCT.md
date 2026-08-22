@@ -26,7 +26,7 @@ Success for this UI redesign: a viewer (judge or in-fiction operator) understand
 Existing systems (CCTV dashboards, occupancy counters, manned control rooms like Kumbh 2025's 400-operator ICCC) detect crowds; none autonomously decide. Prahari's mechanism is a graded, level-gated autonomous response engine:
 
 - L1 (density ≥5/m²) and L4 PRE-WARN (≥7/m²): fire automatically, <3s, no human in the loop.
-- L2 (≥6/m²): auto-executes in a 10-second operator-cancellable window.
+- L2 (≥6/m²): stages an action and always requires an explicit operator confirm — it does not auto-execute. The on-screen timer is an elapsed-time urgency indicator, not a countdown to automatic action (fixed 2026-08-22, alongside a backend change that also moved escalator-reversal and Gate B throttling from L1 into this confirm-gated tier).
 - L3 (predicted ≥7.5/m² in 90s): platform closure, always requires a human one-tap confirm — never auto-fires.
 - L5 SOS (≥8/m²): full emergency dispatch, automatic, but hard-gated — cannot cold-fire unless L4 already fired for the same zone in the current incident.
 

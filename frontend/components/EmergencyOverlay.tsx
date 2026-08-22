@@ -1,9 +1,8 @@
 "use client";
 import { useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { TriangleAlert, Check } from "lucide-react";
 import type { Intervention } from "@/lib/types";
-
-const M: React.CSSProperties = { fontFamily: "'Share Tech Mono', monospace" };
 
 const SERVICES = [
   { label: "RPF",            detail: "Railway Protection Force deployed" },
@@ -19,7 +18,6 @@ interface Props {
 }
 
 export default function EmergencyOverlay({ active, sosIntervention, onDismiss }: Props) {
-  // Auto-dismiss after 10s so it doesn't block the rest of the demo
   useEffect(() => {
     if (!active) return;
     const t = setTimeout(() => onDismiss?.(), 10000);
@@ -40,58 +38,39 @@ export default function EmergencyOverlay({ active, sosIntervention, onDismiss }:
             display: "flex", alignItems: "center", justifyContent: "center",
           }}
         >
-          {/* Pulsing border */}
           <motion.div
-            style={{
-              position: "absolute", inset: 0,
-              border: "3px solid #FF1A1A",
-              pointerEvents: "none",
-            }}
+            style={{ position: "absolute", inset: 0, border: "3px solid var(--critical)", pointerEvents: "none" }}
             animate={{ opacity: [1, 0.2, 1] }}
             transition={{ duration: 0.6, repeat: Infinity }}
           />
 
-          <div style={{
-            ...M,
+          <div className="scope" style={{
             width: 520, maxWidth: "calc(100vw - 40px)",
             background: "#0A0404",
-            border: "1px solid #FF1A1A",
+            border: "1px solid var(--critical)",
             padding: "28px 32px",
           }}>
-            {/* Header */}
             <motion.div
-              animate={{ opacity: [1, 0.4, 1] }}
+              animate={{ opacity: [1, 0.55, 1] }}
               transition={{ duration: 0.8, repeat: Infinity }}
-              style={{
-                fontSize: 11, color: "#FF1A1A", letterSpacing: "0.2em",
-                marginBottom: 6,
-              }}
+              style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 20 }}
             >
-              ⚠ FAILSAFE ACTIVATED ⚠
+              <TriangleAlert size={22} color="var(--critical)" strokeWidth={1.75} />
+              <div style={{ fontSize: 21, fontWeight: 700, color: "#FF6B6B", letterSpacing: "0.08em", lineHeight: 1.25 }}>
+                FAILSAFE ACTIVATED — EMERGENCY DISPATCH
+              </div>
             </motion.div>
 
-            <div style={{
-              fontSize: 24, fontWeight: 700, color: "#FF4040",
-              letterSpacing: "0.1em", marginBottom: 4,
-            }}>
-              EMERGENCY DISPATCH
-            </div>
-
-            {/* Zone + density */}
             {sosIntervention && (
-              <div style={{ fontSize: 11, color: "#8AB4D4", marginBottom: 20, lineHeight: 1.6 }}>
-                <span style={{ color: "#FF6B00" }}>ZONE:</span>{" "}
-                {sosIntervention.zone}
+              <div style={{ fontSize: 11, color: "var(--text-dim)", marginBottom: 20, lineHeight: 1.6 }}>
+                <span style={{ color: "var(--prewarn)" }}>ZONE:</span> {sosIntervention.zone}
                 {"  "}
-                <span style={{ color: "#FF6B00" }}>TRIGGER:</span>{" "}
-                {sosIntervention.trigger}
+                <span style={{ color: "var(--prewarn)" }}>TRIGGER:</span> {sosIntervention.trigger}
               </div>
             )}
 
-            {/* Divider */}
             <div style={{ height: 1, background: "#2A0808", marginBottom: 20 }} />
 
-            {/* Services */}
             <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 24 }}>
               {SERVICES.map((svc, i) => (
                 <motion.div
@@ -109,41 +88,33 @@ export default function EmergencyOverlay({ active, sosIntervention, onDismiss }:
                   <motion.div
                     animate={{ opacity: [1, 0.4, 1] }}
                     transition={{ duration: 1.2, repeat: Infinity, delay: i * 0.3 }}
-                    style={{
-                      width: 8, height: 8, borderRadius: "50%",
-                      background: "#FF1A1A", flexShrink: 0,
-                    }}
+                    style={{ width: 7, height: 7, borderRadius: "50%", background: "var(--critical)", flexShrink: 0 }}
                   />
-                  <span style={{ fontSize: 12, color: "#FF4040", letterSpacing: "0.12em", width: 130 }}>
+                  <span style={{ fontSize: 12, color: "#FF6B6B", letterSpacing: "0.12em", width: 130 }}>
                     {svc.label}
                   </span>
                   <span style={{ fontSize: 10, color: "#6A3030", letterSpacing: "0.04em" }}>
                     {svc.detail}
                   </span>
-                  <span style={{ marginLeft: "auto", fontSize: 10, color: "#00C84C", letterSpacing: "0.08em" }}>
-                    ✓ SENT
+                  <span style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 4, fontSize: 10, color: "var(--sweep)", letterSpacing: "0.08em" }}>
+                    <Check size={11} strokeWidth={2} /> SENT
                   </span>
                 </motion.div>
               ))}
             </div>
 
-            {/* Dismiss */}
             <button
               onClick={onDismiss}
               style={{
-                ...M,
-                width: "100%", padding: "8px 0", fontSize: 11, cursor: "pointer",
-                background: "transparent", color: "#4A2020",
+                width: "100%", padding: "9px 0", fontSize: 11, cursor: "pointer",
+                background: "transparent", color: "#7A4040",
                 border: "1px solid #2A0808", letterSpacing: "0.1em",
               }}
             >
               ACKNOWLEDGE — DISMISS OVERLAY
             </button>
 
-            <div style={{
-              marginTop: 12, fontSize: 9, color: "#2A0808",
-              letterSpacing: "0.08em", textAlign: "center",
-            }}>
+            <div style={{ marginTop: 12, fontSize: 9, color: "#4A2020", letterSpacing: "0.08em", textAlign: "center" }}>
               [SIMULATED] — DEMO ENVIRONMENT — NOT CONNECTED TO LIVE SERVICES
             </div>
           </div>

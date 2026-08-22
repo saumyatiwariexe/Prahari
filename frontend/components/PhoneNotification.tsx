@@ -1,6 +1,7 @@
 "use client";
 import { useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { Wifi, BatteryFull } from "lucide-react";
 
 interface Props {
   notification: { title: string; body: string; level: string } | null;
@@ -15,8 +16,8 @@ export default function PhoneNotification({ notification, onDismiss }: Props) {
   }, [notification, onDismiss]);
 
   const levelColor =
-    notification?.level === "L3" ? "#EF4444" :
-    notification?.level === "L2" ? "#F59E0B" : "#22C55E";
+    notification?.level === "L3" ? "var(--red)" :
+    notification?.level === "L2" ? "var(--amber)" : "var(--sweep)";
 
   return (
     <AnimatePresence>
@@ -28,68 +29,59 @@ export default function PhoneNotification({ notification, onDismiss }: Props) {
           transition={{ type: "spring", damping: 18, stiffness: 180 }}
           className="fixed bottom-24 right-4 z-50 pointer-events-none"
         >
-          {/* Phone frame */}
-          <div className="relative w-52 bg-[#0f0f0f] rounded-[28px] border-4 border-[#222] shadow-2xl shadow-black/60 overflow-hidden p-1">
-            {/* Screen */}
-            <div className="rounded-[22px] bg-[#1a1a2e] overflow-hidden">
-              {/* Lock screen top */}
-              <div className="h-6 flex items-center justify-between px-4 bg-black/30">
-                <span className="text-[9px] text-white/70">9:41</span>
-                <div className="flex items-center gap-1">
-                  <span className="text-[9px] text-white/70">▐▐▐</span>
-                  <span className="text-[9px] text-white/70">WiFi</span>
-                  <span className="text-[9px] text-white/70">🔋</span>
+          {/* Phone frame — a diegetic device, not the scope's own chrome */}
+          <div className="relative w-52 bg-[#0c0e0f] rounded-[28px] border-4 border-[#1c1f1f] shadow-2xl shadow-black/60 overflow-hidden p-1">
+            <div className="rounded-[22px] overflow-hidden" style={{ background: "var(--bg)" }}>
+              <div className="h-6 flex items-center justify-between px-4" style={{ background: "rgba(0,0,0,0.3)" }}>
+                <span className="scope" style={{ fontSize: 9, color: "var(--text-dim)" }}>9:41</span>
+                <div className="flex items-center gap-1.5">
+                  <Wifi size={10} strokeWidth={2} color="var(--text-dim)" />
+                  <BatteryFull size={12} strokeWidth={2} color="var(--text-dim)" />
                 </div>
               </div>
 
-              {/* Notification card */}
               <motion.div
                 initial={{ y: -20, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
                 transition={{ delay: 0.2 }}
-                className="mx-2 my-3 rounded-xl bg-[#1e1e3f]/90 backdrop-blur-sm border overflow-hidden"
-                style={{ borderColor: levelColor + "60" }}
+                className="mx-2 my-3 rounded-xl overflow-hidden"
+                style={{ background: "var(--panel-2)", border: `1px solid ${levelColor}60` }}
               >
-                {/* App header */}
-                <div className="flex items-center gap-2 px-3 py-2 border-b border-white/10">
+                <div className="flex items-center gap-2 px-3 py-2" style={{ borderBottom: "1px solid var(--hair-dim)" }}>
                   <div
-                    className="w-5 h-5 rounded-md flex items-center justify-center text-[10px] font-bold"
-                    style={{ backgroundColor: levelColor + "30", color: levelColor }}
+                    className="w-5 h-5 rounded-md flex items-center justify-center scope"
+                    style={{ background: `${levelColor}30`, color: levelColor, fontSize: 9, fontWeight: 700 }}
                   >
-                    CG
+                    PR
                   </div>
-                  <span className="text-[10px] font-semibold text-white">Prahari</span>
-                  <span className="ml-auto text-[9px] text-white/40">now</span>
+                  <span style={{ fontSize: 10, color: "var(--text)" }} className="font-semibold">Prahari</span>
+                  <span style={{ fontSize: 9, color: "var(--text-faint)" }} className="ml-auto">now</span>
                 </div>
 
                 <div className="px-3 py-2">
-                  <p className="text-[11px] font-bold text-white mb-0.5">{notification.title}</p>
-                  <p className="text-[10px] text-white/70 leading-relaxed">{notification.body}</p>
+                  <p style={{ fontSize: 11, color: "var(--text)" }} className="font-bold mb-0.5">{notification.title}</p>
+                  <p style={{ fontSize: 10, color: "var(--text-dim)" }} className="leading-relaxed">{notification.body}</p>
 
-                  {/* Level badge */}
                   <div
-                    className="mt-2 inline-block rounded px-2 py-0.5 text-[9px] font-bold"
-                    style={{ backgroundColor: levelColor + "20", color: levelColor }}
+                    className="mt-2 inline-block px-2 py-0.5 scope"
+                    style={{ background: `${levelColor}20`, color: levelColor, fontSize: 9, fontWeight: 700 }}
                   >
                     {notification.level} ALERT
                   </div>
                 </div>
               </motion.div>
 
-              {/* Swipe hint */}
               <div className="pb-3 flex justify-center">
-                <div className="w-16 h-1 rounded-full bg-white/20" />
+                <div className="w-16 h-1 rounded-full" style={{ background: "rgba(255,255,255,0.15)" }} />
               </div>
             </div>
 
-            {/* Home indicator notch */}
-            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-16 h-5 bg-[#0f0f0f] rounded-b-2xl" />
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-16 h-5 bg-[#0c0e0f] rounded-b-2xl" />
           </div>
 
-          {/* Screen glow */}
           <motion.div
-            className="absolute inset-0 rounded-[28px]"
-            style={{ boxShadow: `0 0 30px 4px ${levelColor}40` }}
+            className="absolute inset-0 rounded-[28px] pointer-events-none"
+            style={{ boxShadow: `0 14px 36px -6px ${levelColor}70` }}
             animate={{ opacity: [0.6, 1, 0.6] }}
             transition={{ duration: 1.5, repeat: Infinity }}
           />

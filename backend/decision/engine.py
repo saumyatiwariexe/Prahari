@@ -122,7 +122,7 @@ class DecisionEngine:
                     iv = Intervention(
                         zone=zone_id,
                         level=Level.SOS,
-                        trigger=f"Density {density:.1f}/m² — LETHAL threshold. Emergency dispatch.",
+                        trigger=f"Density {density:.1f}/m² — LETHAL threshold, PRE-WARN already active for this zone. Emergency dispatch.",
                         action=f"{label}: {msg}",
                         status="fired",
                         response_time_ms=(time.perf_counter() - t_start) * 1000,

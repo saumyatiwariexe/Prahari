@@ -1,8 +1,8 @@
 "use client";
 import { motion } from "framer-motion";
-import type { ZoneState, ZonePrediction } from "@/lib/types";
-import { BORDER_MAP, COLOR_MAP, ZONE_META } from "@/lib/constants";
-import type { GateState } from "./GateStatusOverlay";
+import { ArrowUpDown, Lock, MinusCircle, TriangleAlert } from "lucide-react";
+import type { ZoneState, ZonePrediction, GateState } from "@/lib/types";
+import { BORDER_MAP, ZONE_META, DENSITY_THRESHOLDS } from "@/lib/constants";
 
 interface Props {
   zones: Record<string, ZoneState>;
@@ -14,197 +14,171 @@ interface Props {
   esc2Reversed?: boolean;
 }
 
-const PLATFORMS = ["P1", "P2", "P3", "P4", "P5", "P6"];
+const CX = 280, CY = 280, R_MAX = 248, R_MIN = 40, HUB_R = 34;
 
-export default function StationMap({ zones, predictions, showPredictions, compact, gateStates = {}, esc1Reversed, esc2Reversed }: Props) {
-  const platforms = compact ? PLATFORMS.slice(0, 5) : PLATFORMS;
+// Density -> radius: closer to center is more severe, matching the graded
+// threshold ladder (README "Density Thresholds Reference").
+const RADIUS_POINTS: [number, number][] = [
+  [0, 248], [5, 210], [6, 176], [7, 142], [7.5, 124], [8, 92], [10, 50],
+];
+function densityToRadius(d: number) {
+  const clamped = Math.max(0, Math.min(d, 10));
+  for (let i = 0; i < RADIUS_POINTS.length - 1; i++) {
+    const [d0, r0] = RADIUS_POINTS[i];
+    const [d1, r1] = RADIUS_POINTS[i + 1];
+    if (clamped >= d0 && clamped <= d1) {
+      const t = (clamped - d0) / (d1 - d0);
+      return r0 + (r1 - r0) * t;
+    }
+  }
+  return R_MIN;
+}
+function polar(bearingDeg: number, radius: number) {
+  const rad = (bearingDeg * Math.PI) / 180;
+  return { x: CX + radius * Math.sin(rad), y: CY - radius * Math.cos(rad) };
+}
+
+// Fixed bearings — a stylized severity scope, not a literal floor plan.
+const BEARINGS: Record<string, number> = {
+  GATE_B: 315, GATE_A: 345, GATE_C: 15,
+  FOB1: 70, FOB2: 100,
+  P1: 145, P2: 159, P3: 173, P4: 187, P5: 201, P6: 215,
+};
+const FULL_ORDER = ["GATE_B", "GATE_A", "GATE_C", "FOB1", "FOB2", "P1", "P2", "P3", "P4", "P5", "P6"];
+const COMPACT_ORDER = ["GATE_B", "FOB1", "FOB2", "P1", "P2", "P3"];
+
+export default function StationMap({
+  zones, predictions, showPredictions, compact, gateStates = {}, esc1Reversed, esc2Reversed,
+}: Props) {
+  const order = compact ? COMPACT_ORDER : FULL_ORDER;
+  const conc = zones["CONC"];
+  const concColor = BORDER_MAP[conc?.color ?? "green"];
+  const concCritical = conc?.color === "critical";
 
   return (
-    // Natural height — parent container handles scroll
-    <div style={{ display: "flex", flexDirection: "column", gap: 6, width: "100%" }}>
-
-      {/* ── CONCOURSE ── always full width */}
-      <ZoneCard
-        id="CONC"
-        state={zones["CONC"]}
-        pred={showPredictions ? predictions?.["CONC"] : undefined}
-        small={compact}
-      />
-
-      {/* ── Full layout: Gates row + FOB row ── */}
-      {!compact && (
-        <>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 6 }}>
-            <ZoneCard id="GATE_B" state={zones["GATE_B"]} small gateState={gateStates["GATE_B"]} />
-            <ZoneCard id="GATE_A" state={zones["GATE_A"]} small gateState={gateStates["GATE_A"]} />
-            <ZoneCard id="GATE_C" state={zones["GATE_C"]} small gateState={gateStates["GATE_C"]} />
-          </div>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
-            <ZoneCard id="FOB1" state={zones["FOB1"]}
-              pred={showPredictions ? predictions?.["FOB1"] : undefined}
-              escLabel={esc1Reversed ? "↓ Exit Only" : undefined} />
-            <ZoneCard id="FOB2" state={zones["FOB2"]}
-              pred={showPredictions ? predictions?.["FOB2"] : undefined}
-              escLabel={esc2Reversed ? "↓ Exit Only" : undefined} />
-          </div>
-        </>
-      )}
-
-      {/* ── Compact layout: GATE_B + FOBs ── */}
-      {compact && (
-        <>
-          <ZoneCard id="GATE_B" state={zones["GATE_B"]} small gateState={gateStates["GATE_B"]} />
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
-            <ZoneCard id="FOB1" state={zones["FOB1"]} small
-              pred={showPredictions ? predictions?.["FOB1"] : undefined} />
-            <ZoneCard id="FOB2" state={zones["FOB2"]} small />
-          </div>
-        </>
-      )}
-
-      {/* ── Platforms ── */}
-      <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
-        {platforms.map(id => (
-          <PlatformRow
-            key={id} id={id}
-            state={zones[id]}
-            pred={showPredictions ? predictions?.[id] : undefined}
-          />
+    <div style={{ position: "relative", width: "100%" }}>
+      <svg viewBox="0 0 560 560" style={{ width: "100%", height: "auto", display: "block" }}>
+        {/* Range rings — the threshold ladder */}
+        {DENSITY_THRESHOLDS.map((t) => (
+          <circle key={t.value} cx={CX} cy={CY} r={densityToRadius(t.value)}
+            fill="none" stroke="var(--hair)" strokeWidth={1} />
         ))}
-      </div>
+        <circle cx={CX} cy={CY} r={R_MAX} fill="none" stroke="var(--hair)" strokeWidth={1.5} />
+
+        {/* Threshold ladder labels, west side */}
+        {!compact && DENSITY_THRESHOLDS.map((t) => {
+          const r = densityToRadius(t.value);
+          return (
+            <text key={t.value} x={CX - r - 6} y={CY + 3} textAnchor="end"
+              className="scope" fontSize={9} fill="var(--text-faint)" letterSpacing="0.05em">
+              {t.value.toFixed(1)}
+            </text>
+          );
+        })}
+
+        {/* Rotating sweep with trailing persistence fan */}
+        <motion.g
+          style={{ transformOrigin: `${CX}px ${CY}px` }}
+          animate={{ rotate: 360 }}
+          transition={{ duration: 7, repeat: Infinity, ease: "linear" }}
+        >
+          {[18, 14, 10, 6, 3, 0].map((offset, i) => {
+            const p = polar(-offset, R_MAX);
+            return (
+              <line key={i} x1={CX} y1={CY} x2={p.x} y2={p.y}
+                stroke="var(--sweep)" strokeWidth={offset === 0 ? 1.4 : 1}
+                opacity={offset === 0 ? 0.9 : 0.22 - i * 0.03} />
+            );
+          })}
+        </motion.g>
+
+        {/* Predicted trajectory vectors */}
+        {showPredictions && order.map((id) => {
+          const bearing = BEARINGS[id];
+          const pred = predictions?.[id];
+          const state = zones[id];
+          if (!pred || !state) return null;
+          const from = polar(bearing, densityToRadius(state.density));
+          const to = polar(bearing, densityToRadius(pred.t90.density));
+          if (Math.abs(from.x - to.x) < 1 && Math.abs(from.y - to.y) < 1) return null;
+          return (
+            <line key={`vec-${id}`} x1={from.x} y1={from.y} x2={to.x} y2={to.y}
+              stroke={BORDER_MAP[pred.t90.color]} strokeWidth={1.4}
+              strokeDasharray="2 3" opacity={0.75} markerEnd="url(#vecHead)" />
+          );
+        })}
+
+        <defs>
+          <marker id="vecHead" markerWidth={6} markerHeight={6} refX={4} refY={3} orient="auto">
+            <path d="M0,0 L6,3 L0,6 Z" fill="var(--text-dim)" />
+          </marker>
+        </defs>
+
+        {/* Concourse — the hub every contact routes through */}
+        <motion.circle cx={CX} cy={CY} r={HUB_R}
+          fill={concColor + "22"} stroke={concColor} strokeWidth={2}
+          animate={concCritical ? { opacity: [1, 0.5, 1] } : {}}
+          transition={{ duration: 0.8, repeat: Infinity }} />
+        <text x={CX} y={CY - 4} textAnchor="middle" className="scope" fontSize={9}
+          fill="var(--text-dim)" letterSpacing="0.08em">CONC</text>
+        <text x={CX} y={CY + 10} textAnchor="middle" className="scope" fontWeight={700}
+          fontSize={13} fill={concColor}>{(conc?.density ?? 0).toFixed(1)}</text>
+
+        {/* Contacts */}
+        {order.map((id) => {
+          const bearing = BEARINGS[id];
+          const state = zones[id];
+          const color = BORDER_MAP[state?.color ?? "green"];
+          const critical = state?.color === "critical";
+          const r = densityToRadius(state?.density ?? 0);
+          const p = polar(bearing, r);
+          const isRight = Math.sin((bearing * Math.PI) / 180) >= -0.05;
+          const labelR = r + (compact ? 14 : 18);
+          const lp = polar(bearing, labelR);
+          const gate = id.startsWith("GATE_") ? (gateStates[id] ?? "open") : null;
+          const escReversed = id === "FOB1" ? esc1Reversed : id === "FOB2" ? esc2Reversed : false;
+
+          return (
+            <g key={id}>
+              {critical && (
+                <motion.circle cx={p.x} cy={p.y} r={9} fill="none" stroke={color} strokeWidth={1.5}
+                  animate={{ scale: [1, 1.9], opacity: [0.8, 0] }}
+                  transition={{ duration: 1, repeat: Infinity }} style={{ transformOrigin: `${p.x}px ${p.y}px` }} />
+              )}
+              <circle cx={p.x} cy={p.y} r={5} fill={color} stroke={concColor === color ? "none" : "var(--bg)"} strokeWidth={1} />
+
+              {id === "FOB1" && (
+                <TriangleAlert
+                  x={isRight ? lp.x - (compact ? 1 : 2) : lp.x - (compact ? 32 : 42)}
+                  y={lp.y - (compact ? 15 : 18)}
+                  size={compact ? 9 : 11} color="var(--prewarn)" strokeWidth={2}
+                />
+              )}
+              <text x={lp.x} y={lp.y - 3} textAnchor={isRight ? "start" : "end"}
+                className="scope" fontSize={compact ? 8 : 9.5} fill="var(--text-dim)" letterSpacing="0.04em">
+                {ZONE_META[id]?.shortLabel ?? id}
+              </text>
+              <text x={lp.x} y={lp.y + (compact ? 8 : 10)} textAnchor={isRight ? "start" : "end"}
+                className="scope" fontWeight={700} fontSize={compact ? 10 : 12} fill={color}>
+                {(state?.density ?? 0).toFixed(1)}
+              </text>
+
+              {gate && gate !== "open" && (
+                <g transform={`translate(${p.x}, ${p.y})`}>
+                  {gate === "closed" ? (
+                    <Lock x={isRight ? -30 : 18} y={-7} size={13} color={color} strokeWidth={1.75} />
+                  ) : (
+                    <MinusCircle x={isRight ? -30 : 18} y={-7} size={13} color={color} strokeWidth={1.75} />
+                  )}
+                </g>
+              )}
+              {escReversed && (
+                <ArrowUpDown x={lp.x - 6} y={lp.y + (compact ? 12 : 16)} size={12} color="var(--amber)" strokeWidth={1.75} />
+              )}
+            </g>
+          );
+        })}
+      </svg>
     </div>
-  );
-}
-
-// ── Zone card ─────────────────────────────────────────────────────────────────
-function ZoneCard({ id, state, pred, small, gateState, escLabel }: {
-  id: string; state?: ZoneState; pred?: ZonePrediction;
-  small?: boolean; gateState?: GateState; escLabel?: string;
-}) {
-  const color   = state?.color ?? "green";
-  const accent  = BORDER_MAP[color];
-  const bg      = COLOR_MAP[color];
-  const density = state?.density ?? 0;
-  const isCrit  = color === "critical";
-  const pct     = Math.min((density / 9) * 100, 100);
-
-  return (
-    <motion.div
-      style={{
-        background: bg,
-        border: `1px solid ${isCrit ? accent : "#21262D"}`,
-        borderLeft: `3px solid ${accent}`,
-        borderRadius: 6,
-        padding: small ? "7px 10px" : "10px 14px",
-        position: "relative",
-        overflow: "hidden",
-      }}
-      animate={isCrit ? { borderColor: [accent, "#21262D", accent] } : {}}
-      transition={{ duration: 0.8, repeat: Infinity }}
-    >
-      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8 }}>
-        <div style={{ minWidth: 0 }}>
-          <div style={{
-            fontSize: 10, fontWeight: 600, color: "#64748B",
-            textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 2,
-            overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
-          }}>
-            {ZONE_META[id]?.shortLabel ?? id}
-          </div>
-          {state && (
-            <div style={{ fontSize: small ? 14 : 24, fontWeight: 800, color: accent, lineHeight: 1 }}>
-              {density.toFixed(1)}
-              <span style={{ fontSize: 10, fontWeight: 500, color: "#475569", marginLeft: 2 }}>/m²</span>
-            </div>
-          )}
-        </div>
-
-        <div style={{ textAlign: "right", flexShrink: 0 }}>
-          {state && !small && (
-            <div style={{ fontSize: 11, color: "#94A3B8" }}>
-              {state.count.toLocaleString()}
-              <span style={{ fontSize: 10, color: "#475569", marginLeft: 3 }}>prs</span>
-            </div>
-          )}
-          {escLabel && (
-            <div style={{ fontSize: 10, color: "#F59E0B", background: "rgba(245,158,11,0.1)", padding: "1px 5px", borderRadius: 3, marginTop: 2 }}>
-              {escLabel}
-            </div>
-          )}
-          {gateState && gateState !== "open" && (
-            <div style={{ fontSize: 10, color: gateState === "closed" ? "#EF4444" : "#F59E0B", fontWeight: 600 }}>
-              {gateState.toUpperCase()}
-            </div>
-          )}
-          {pred && (
-            <div style={{ fontSize: 10, color: BORDER_MAP[pred.t90.color], marginTop: 2 }}>
-              +90s: {pred.t90.density.toFixed(1)}
-            </div>
-          )}
-        </div>
-      </div>
-
-      {!small && (
-        <div style={{ height: 3, background: "#21262D", borderRadius: 2, marginTop: 7, overflow: "hidden" }}>
-          <motion.div
-            style={{ height: "100%", background: accent, borderRadius: 2 }}
-            animate={{ width: `${pct}%` }}
-            transition={{ duration: 0.4 }}
-          />
-        </div>
-      )}
-    </motion.div>
-  );
-}
-
-// ── Platform row ──────────────────────────────────────────────────────────────
-function PlatformRow({ id, state, pred }: { id: string; state?: ZoneState; pred?: ZonePrediction }) {
-  const color   = state?.color ?? "green";
-  const accent  = BORDER_MAP[color];
-  const bg      = COLOR_MAP[color];
-  const density = state?.density ?? 0;
-  const isCrit  = color === "critical";
-  const pct     = Math.min((density / 9) * 100, 100);
-
-  return (
-    <motion.div
-      style={{
-        background: bg,
-        border: `1px solid ${isCrit ? accent : "#21262D"}`,
-        borderLeft: `3px solid ${accent}`,
-        borderRadius: 6,
-        padding: "6px 12px",
-        display: "flex",
-        alignItems: "center",
-        gap: 8,
-      }}
-      animate={isCrit ? { borderColor: [accent, "#21262D", accent] } : {}}
-      transition={{ duration: 0.8, repeat: Infinity }}
-    >
-      <div style={{ fontSize: 10, fontWeight: 600, color: "#64748B", textTransform: "uppercase", letterSpacing: "0.05em", width: 44, flexShrink: 0 }}>
-        {ZONE_META[id]?.shortLabel ?? id}
-      </div>
-      <div style={{ fontSize: 16, fontWeight: 800, color: accent, width: 64, flexShrink: 0 }}>
-        {density.toFixed(2)}
-        <span style={{ fontSize: 9, color: "#475569", fontWeight: 400 }}>/m²</span>
-      </div>
-      {state && (
-        <div style={{ fontSize: 11, color: "#94A3B8", width: 52, flexShrink: 0 }}>
-          {state.count} <span style={{ color: "#475569", fontSize: 10 }}>prs</span>
-        </div>
-      )}
-      <div style={{ flex: 1, height: 5, background: "#21262D", borderRadius: 3, overflow: "hidden" }}>
-        <motion.div
-          style={{ height: "100%", background: accent, borderRadius: 3 }}
-          animate={{ width: `${pct}%` }}
-          transition={{ duration: 0.4 }}
-        />
-      </div>
-      {pred && (
-        <div style={{ fontSize: 10, color: BORDER_MAP[pred.t90.color], flexShrink: 0 }}>
-          +90s {pred.t90.density.toFixed(1)}
-        </div>
-      )}
-    </motion.div>
   );
 }

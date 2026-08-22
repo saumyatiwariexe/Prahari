@@ -4,7 +4,7 @@ export const ZONE_META: Record<string, { label: string; shortLabel: string }> = 
   GATE_A: { label: "Ajmeri Gate Entry",            shortLabel: "Ajmeri Gt" },
   GATE_B: { label: "Paharganj Gate Entry",         shortLabel: "Paharganj" },
   GATE_C: { label: "FOB-1 Exit Corridor",          shortLabel: "FOB-1 Exit" },
-  FOB1:   { label: "FOB-3 Stairway (Pf 14/15) ⚠", shortLabel: "FOB-3 ⚠" },   // CRUSH LOCATION
+  FOB1:   { label: "FOB-3 Stairway (Pf 14/15)",   shortLabel: "FOB-3" },   // CRUSH LOCATION — Feb 15 2025
   FOB2:   { label: "FOB-2 Stairway (Pf 12/13)",   shortLabel: "FOB-2" },
   P1:     { label: "Platform 12 — Prayagraj Spl",  shortLabel: "Pf 12" },
   P2:     { label: "Platform 13 — Swatantrata Exp",shortLabel: "Pf 13" },

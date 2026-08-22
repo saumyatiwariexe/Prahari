@@ -1,6 +1,7 @@
 "use client";
 import { useRef, useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { X, TriangleAlert, Video } from "lucide-react";
 import type { PersonBbox } from "@/lib/types";
 
 interface Props {
@@ -9,8 +10,6 @@ interface Props {
   persons?: PersonBbox[];
   showTracking?: boolean;
 }
-
-const M: React.CSSProperties = { fontFamily: "'Share Tech Mono', monospace" };
 
 export default function VideoPlayer({
   critical,
@@ -24,7 +23,6 @@ export default function VideoPlayer({
   const [hasVideo, setHasVideo] = useState(false);
   const [hidden, setHidden]     = useState(false);
 
-  // Load video
   useEffect(() => {
     const v = videoRef.current;
     if (!v) return;
@@ -39,13 +37,11 @@ export default function VideoPlayer({
     };
   }, [videoSrc]);
 
-  // Playback speed
   useEffect(() => {
     if (!videoRef.current || !hasVideo) return;
     videoRef.current.playbackRate = critical ? 1.4 : 1.0;
   }, [critical, hasVideo]);
 
-  // RAF loop: mirror video to canvas + draw bboxes
   useEffect(() => {
     if (!showTracking) {
       cancelAnimationFrame(rafRef.current);
@@ -64,33 +60,28 @@ export default function VideoPlayer({
       if (!ctx) { rafRef.current = requestAnimationFrame(draw); return; }
 
       ctx.drawImage(video, 0, 0, W, H);
-
-      // Subtle green tint for AI view
-      ctx.fillStyle = "rgba(0,200,76,0.04)";
+      ctx.fillStyle = "rgba(41,255,140,0.04)";
       ctx.fillRect(0, 0, W, H);
 
-      // Draw person bounding boxes
       ctx.lineWidth = 1.2;
       for (const p of persons) {
         const x = p.x1 * W;
         const y = p.y1 * H;
         const w = (p.x2 - p.x1) * W;
         const h = (p.y2 - p.y1) * H;
-        ctx.strokeStyle = "#00C84C";
+        ctx.strokeStyle = "#29FF8C";
         ctx.strokeRect(x, y, w, h);
-        // Small corner marks
-        ctx.fillStyle = "#00C84C";
+        ctx.fillStyle = "#29FF8C";
         ctx.fillRect(x, y, 3, 1);
         ctx.fillRect(x, y, 1, 3);
         ctx.fillRect(x + w - 3, y, 3, 1);
         ctx.fillRect(x + w - 1, y, 1, 3);
       }
 
-      // Person count overlay
       if (persons.length > 0) {
-        ctx.fillStyle = "rgba(0,200,76,0.8)";
+        ctx.fillStyle = "rgba(41,255,140,0.8)";
         ctx.fillRect(4, 4, 56, 14);
-        ctx.fillStyle = "#000";
+        ctx.fillStyle = "#04120B";
         ctx.font = "bold 8px monospace";
         ctx.fillText(`${persons.length} PERSONS`, 7, 14);
       }
@@ -105,15 +96,16 @@ export default function VideoPlayer({
     return (
       <button
         onClick={() => setHidden(false)}
+        className="scope"
         style={{
-          ...M,
           position: "fixed", bottom: 16, left: 16, zIndex: 40,
-          height: 26, padding: "0 12px", fontSize: 10,
-          background: "#080C14", color: "#4A6A84",
-          border: "1px solid #142035", cursor: "pointer", letterSpacing: "0.08em",
+          display: "flex", alignItems: "center", gap: 6,
+          height: 28, padding: "0 12px", fontSize: 10,
+          background: "var(--panel)", color: "var(--text-mute)",
+          border: "1px solid var(--hair)", cursor: "pointer", letterSpacing: "0.08em",
         }}
       >
-        SHOW CCTV
+        <Video size={12} strokeWidth={1.75} /> SHOW CCTV
       </button>
     );
   }
@@ -128,78 +120,58 @@ export default function VideoPlayer({
       animate={{ width: widgetWidth }}
       transition={{ type: "spring", stiffness: 180, damping: 22 }}
     >
-      <div style={{
-        background: "#06080E",
-        border: critical
-          ? "1px solid #E82020"
-          : showTracking ? "1px solid #00C84C40" : "1px solid #142035",
+      <div className="panel" style={{
+        borderColor: critical ? "var(--red)" : showTracking ? "var(--sweep-dim)" : "var(--hair)",
         overflow: "hidden",
         position: "relative",
       }}>
-        {/* Critical pulse */}
         <AnimatePresence>
           {critical && (
             <motion.div
-              style={{
-                position: "absolute", inset: 0,
-                border: "1px solid #E82020", pointerEvents: "none", zIndex: 10,
-              }}
+              style={{ position: "absolute", inset: 0, border: "1px solid var(--red)", pointerEvents: "none", zIndex: 10 }}
               animate={{ opacity: [1, 0.2, 1] }}
               transition={{ duration: 0.7, repeat: Infinity }}
             />
           )}
         </AnimatePresence>
 
-        {/* Header */}
-        <div style={{
-          ...M,
+        <div className="scope" style={{
           display: "flex", alignItems: "center", gap: 6,
-          padding: "4px 8px",
-          background: "#080C14", borderBottom: "1px solid #0E1E30",
+          padding: "5px 8px",
+          background: "var(--panel-2)", borderBottom: "1px solid var(--hair-dim)",
         }}>
           <motion.div
-            style={{
-              width: 6, height: 6, borderRadius: "50%",
-              background: hasVideo ? "#E82020" : "#2C4060",
-            }}
+            style={{ width: 6, height: 6, borderRadius: "50%", background: hasVideo ? "var(--red)" : "var(--text-faint)" }}
             animate={hasVideo ? { opacity: [1, 0.3, 1] } : {}}
             transition={{ duration: 1, repeat: Infinity }}
           />
-          <span style={{ fontSize: 10, color: "#4A6A84", letterSpacing: "0.1em" }}>
+          <span style={{ fontSize: 10, color: "var(--text-mute)", letterSpacing: "0.1em" }}>
             {showTracking ? "CCTV · AI TRACK" : "LIVE CCTV"}
           </span>
           {critical && (
             <motion.span
-              style={{ fontSize: 9, color: "#E82020", letterSpacing: "0.06em" }}
+              style={{ display: "flex", alignItems: "center", gap: 3, fontSize: 9, color: "var(--red)", letterSpacing: "0.06em" }}
               animate={{ opacity: [1, 0.3, 1] }}
               transition={{ duration: 0.5, repeat: Infinity }}
             >
-              ⚠ HIGH DENSITY
+              <TriangleAlert size={10} strokeWidth={1.75} /> HIGH DENSITY
             </motion.span>
           )}
           <button
             onClick={() => setHidden(true)}
-            style={{
-              ...M, marginLeft: "auto",
-              background: "none", border: "none", cursor: "pointer",
-              fontSize: 10, color: "#2C4060", padding: "0 2px",
-            }}
+            style={{ marginLeft: "auto", background: "none", border: "none", cursor: "pointer", color: "var(--text-faint)", padding: "0 2px", display: "flex" }}
           >
-            ✕
+            <X size={12} strokeWidth={1.75} />
           </button>
         </div>
 
-        {/* Body */}
         {showTracking ? (
-          // Split view: raw | tracking
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 0 }}>
-            {/* Left: raw video */}
             <div style={{ position: "relative" }}>
-              <div style={{
-                ...M,
-                fontSize: 8, color: "#2C4060", letterSpacing: "0.1em",
-                padding: "2px 6px", background: "#080C14",
-                borderBottom: "1px solid #0E1E30", borderRight: "1px solid #0E1E30",
+              <div className="scope" style={{
+                fontSize: 8, color: "var(--text-faint)", letterSpacing: "0.1em",
+                padding: "2px 6px", background: "var(--panel-2)",
+                borderBottom: "1px solid var(--hair-dim)", borderRight: "1px solid var(--hair-dim)",
               }}>
                 RAW FEED
               </div>
@@ -211,20 +183,18 @@ export default function VideoPlayer({
                   style={{
                     width: "100%", height: "100%", objectFit: "cover",
                     display: hasVideo ? "block" : "none",
-                    borderRight: "1px solid #0E1E30",
+                    borderRight: "1px solid var(--hair-dim)",
                   }}
                 />
-                {!hasVideo && <PlaceholderDots critical={critical} />}
+                {!hasVideo && <PlaceholderDots />}
               </div>
             </div>
 
-            {/* Right: tracking canvas */}
             <div style={{ position: "relative" }}>
-              <div style={{
-                ...M,
-                fontSize: 8, color: "#00C84C60", letterSpacing: "0.1em",
-                padding: "2px 6px", background: "#06100A",
-                borderBottom: "1px solid #00C84C20",
+              <div className="scope" style={{
+                fontSize: 8, color: "var(--sweep-dim)", letterSpacing: "0.1em",
+                padding: "2px 6px", background: "#04140C",
+                borderBottom: "1px solid var(--hair-dim)",
               }}>
                 AI TRACKING
               </div>
@@ -236,47 +206,41 @@ export default function VideoPlayer({
                     style={{ width: "100%", height: "100%", display: "block" }}
                   />
                 ) : (
-                  <PlaceholderDots critical={false} />
+                  <PlaceholderDots />
                 )}
               </div>
             </div>
           </div>
         ) : (
-          // Normal single video view
           <div style={{ position: "relative", aspectRatio: "16/9" }}>
             <video
               ref={videoRef}
               src={videoSrc}
               autoPlay loop muted playsInline
-              style={{
-                width: "100%", height: "100%", objectFit: "cover",
-                display: hasVideo ? "block" : "none",
-              }}
+              style={{ width: "100%", height: "100%", objectFit: "cover", display: hasVideo ? "block" : "none" }}
             />
-            {!hasVideo && <PlaceholderDots critical={critical} />}
+            {!hasVideo && <PlaceholderDots />}
             {critical && (
               <div style={{
                 position: "absolute", top: 4, right: 4,
-                background: "rgba(232,32,32,0.8)", border: "1px solid #E82020",
+                background: "rgba(255,59,59,0.8)", border: "1px solid var(--red)",
                 padding: "1px 6px",
               }}>
-                <span style={{ ...M, fontSize: 9, color: "#FFB0B0" }}>CRITICAL</span>
+                <span className="scope" style={{ fontSize: 9, color: "#FFE0E0" }}>CRITICAL</span>
               </div>
             )}
           </div>
         )}
 
-        {/* Footer */}
-        <div style={{
-          ...M,
+        <div className="scope" style={{
           padding: "3px 8px",
-          background: "#080C14", borderTop: "1px solid #0E1E30",
+          background: "var(--panel-2)", borderTop: "1px solid var(--hair-dim)",
           display: "flex", alignItems: "center", justifyContent: "space-between",
         }}>
-          <span style={{ fontSize: 9, color: "#2C4060", letterSpacing: "0.06em" }}>
+          <span style={{ fontSize: 9, color: "var(--text-faint)", letterSpacing: "0.06em" }}>
             {showTracking ? `${persons.length} DETECTED` : "FOB-3 · PIP"}
           </span>
-          <span style={{ fontSize: 9, color: "#1A3050" }}>
+          <span style={{ fontSize: 9, color: "var(--text-faint)" }}>
             {showTracking ? "YOLO+SAHI" : "CCTV"}
           </span>
         </div>
@@ -285,17 +249,10 @@ export default function VideoPlayer({
   );
 }
 
-function PlaceholderDots({ critical }: { critical: boolean }) {
+function PlaceholderDots() {
   return (
-    <div style={{
-      position: "absolute", inset: 0,
-      background: "#06080E",
-      display: "flex", alignItems: "center", justifyContent: "center",
-    }}>
-      <span style={{
-        fontFamily: "'Share Tech Mono', monospace",
-        fontSize: 9, color: "#1A3050", letterSpacing: "0.08em",
-      }}>
+    <div style={{ position: "absolute", inset: 0, background: "var(--bg)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+      <span className="scope" style={{ fontSize: 9, color: "var(--text-faint)", letterSpacing: "0.08em" }}>
         NO SIGNAL
       </span>
     </div>

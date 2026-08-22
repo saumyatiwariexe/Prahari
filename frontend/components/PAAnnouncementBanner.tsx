@@ -1,6 +1,7 @@
 "use client";
 import { useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { Megaphone } from "lucide-react";
 
 interface Props {
   message: string | null;
@@ -19,21 +20,21 @@ export default function PAAnnouncementBanner({ message, zone, onDismiss }: Props
     <AnimatePresence>
       {message && (
         <motion.div
-          initial={{ y: 100, opacity: 0 }}
+          initial={{ y: 80, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
-          exit={{ y: 100, opacity: 0 }}
-          transition={{ type: "spring", damping: 20, stiffness: 200 }}
-          className="fixed bottom-0 left-0 right-0 z-50 pointer-events-none"
+          exit={{ y: 80, opacity: 0 }}
+          transition={{ type: "spring", damping: 22, stiffness: 220 }}
+          className="fixed bottom-3 left-3 right-3 z-50 pointer-events-none"
         >
-          <div className="mx-4 mb-3 rounded-xl border border-amber-500/60 bg-[#1a1400]/95 backdrop-blur-sm px-5 py-3 shadow-2xl shadow-amber-900/30">
+          <div className="panel scope mx-auto max-w-2xl px-4 py-3" style={{ borderColor: "var(--amber)" }}>
             <div className="flex items-center gap-4">
-              {/* Speaker icon with sound waves */}
-              <div className="relative shrink-0 w-10 h-10 flex items-center justify-center">
-                <span className="text-2xl z-10">📢</span>
+              <div className="relative shrink-0 w-9 h-9 flex items-center justify-center">
+                <Megaphone size={16} color="var(--amber)" strokeWidth={1.75} className="z-10" />
                 {[1, 2, 3].map((i) => (
                   <motion.div
                     key={i}
-                    className="absolute inset-0 rounded-full border border-amber-400"
+                    className="absolute inset-0 rounded-full"
+                    style={{ border: "1px solid var(--amber)" }}
                     initial={{ scale: 0.6, opacity: 0.8 }}
                     animate={{ scale: 1.5 + i * 0.3, opacity: 0 }}
                     transition={{ duration: 1.2, repeat: Infinity, delay: i * 0.25, ease: "easeOut" }}
@@ -42,30 +43,29 @@ export default function PAAnnouncementBanner({ message, zone, onDismiss }: Props
               </div>
 
               <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-0.5">
-                  <span className="text-xs font-bold text-amber-400 tracking-widest uppercase">
-                    PA ANNOUNCEMENT
+                <div className="flex items-center gap-2 mb-1">
+                  <span style={{ fontSize: 10, color: "var(--amber)", letterSpacing: "0.14em" }} className="font-bold uppercase">
+                    PA Announcement
                   </span>
-                  <span className="text-xs text-slate-500 border border-slate-700 rounded px-1.5">{zone}</span>
-                  <span className="ml-auto text-xs text-slate-500">Auto-issued by Prahari · L1</span>
+                  <span style={{ fontSize: 9, color: "var(--text-mute)", border: "1px solid var(--hair)" }} className="px-1.5">{zone}</span>
+                  <span style={{ fontSize: 9, color: "var(--text-faint)" }} className="ml-auto">Auto-issued by Prahari · L1</span>
                 </div>
-                {/* Scrolling ticker */}
                 <div className="overflow-hidden">
                   <motion.p
                     initial={{ x: "100%" }}
                     animate={{ x: "-100%" }}
                     transition={{ duration: 10, ease: "linear" }}
-                    className="text-sm text-amber-100 whitespace-nowrap font-medium"
+                    style={{ fontSize: 12, color: "var(--text)" }}
+                    className="whitespace-nowrap font-medium"
                   >
                     {message}
                   </motion.p>
                 </div>
               </div>
 
-              {/* Level badge */}
-              <div className="shrink-0 bg-green-900/60 border border-green-600 rounded-lg px-2 py-1 text-center">
-                <div className="text-xs font-bold text-green-400">L1</div>
-                <div className="text-[10px] text-green-500">AUTO</div>
+              <div className="shrink-0 text-center px-2 py-1" style={{ background: "var(--sweep-glow)", border: "1px solid var(--sweep)" }}>
+                <div style={{ fontSize: 11, color: "var(--sweep)" }} className="font-bold">L1</div>
+                <div style={{ fontSize: 8, color: "var(--sweep-dim)" }}>AUTO</div>
               </div>
             </div>
           </div>
