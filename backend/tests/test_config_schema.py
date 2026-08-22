@@ -88,3 +88,29 @@ def test_empty_zone_id_rejected():
     with pytest.raises(ValidationError):
         ZoneConfig(id="", label="Empty Zone", short_label="EZ",
                    category_id="platform", area_m2=100.0)
+
+
+from config.defaults import DEFAULT_CONFIG
+
+EXPECTED_ZONE_IDS = {
+    "CONC", "GATE_A", "GATE_B", "GATE_C", "FOB1", "FOB2",
+    "P1", "P2", "P3", "P4", "P5", "P6",
+}
+
+
+def test_default_config_covers_all_ndls_zones():
+    assert {z.id for z in DEFAULT_CONFIG.zones} == EXPECTED_ZONE_IDS
+
+
+def test_default_config_thresholds_match_todays_constants():
+    t = DEFAULT_CONFIG.thresholds
+    assert (t.density_safe, t.density_warning, t.density_critical) == (3.0, 5.0, 6.0)
+    assert (t.l1_trigger, t.l2_trigger, t.l3_trigger) == (5.0, 6.0, 7.5)
+    assert (t.pre_warn_trigger, t.failsafe_trigger, t.l2_countdown_seconds) == (7.0, 8.0, 10)
+
+
+def test_default_config_is_internally_valid():
+    # StationConfig's own validators already ran at construction; this just
+    # re-confirms the object is what it claims to be.
+    assert DEFAULT_CONFIG.zone_by_id("FOB1").area_m2 == 80.0
+    assert DEFAULT_CONFIG.zone_by_id("FOB1").category_id == "fob"
