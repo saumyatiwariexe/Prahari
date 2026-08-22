@@ -2,7 +2,8 @@
 import { motion } from "framer-motion";
 import { ArrowUpDown, Lock, MinusCircle, TriangleAlert } from "lucide-react";
 import type { ZoneState, ZonePrediction, GateState } from "@/lib/types";
-import { BORDER_MAP, ZONE_META, DENSITY_THRESHOLDS } from "@/lib/constants";
+import { BORDER_MAP } from "@/lib/constants";
+import { useStationConfig } from "@/lib/config-context";
 
 interface Props {
   zones: Record<string, ZoneState>;
@@ -44,13 +45,31 @@ const BEARINGS: Record<string, number> = {
   FOB1: 70, FOB2: 100,
   P1: 145, P2: 159, P3: 173, P4: 187, P5: 201, P6: 215,
 };
-const FULL_ORDER = ["GATE_B", "GATE_A", "GATE_C", "FOB1", "FOB2", "P1", "P2", "P3", "P4", "P5", "P6"];
+// Any zone id not in BEARINGS (i.e. one added through the no-code config UI)
+// gets placed in the unused 220°-310° arc between P6 and GATE_B, spread
+// evenly across however many such "extra" zones currently exist.
+const EXTRA_ARC_START = 220, EXTRA_ARC_END = 310;
+function bearingFor(id: string, extras: string[]): number {
+  const fixed = BEARINGS[id];
+  if (fixed !== undefined) return fixed;
+  const idx = extras.indexOf(id);
+  if (extras.length <= 1) return (EXTRA_ARC_START + EXTRA_ARC_END) / 2;
+  return EXTRA_ARC_START + (idx / (extras.length - 1)) * (EXTRA_ARC_END - EXTRA_ARC_START);
+}
 const COMPACT_ORDER = ["GATE_B", "FOB1", "FOB2", "P1", "P2", "P3"];
 
 export default function StationMap({
   zones, predictions, showPredictions, compact, gateStates = {}, esc1Reversed, esc2Reversed,
 }: Props) {
-  const order = compact ? COMPACT_ORDER : FULL_ORDER;
+  const { config } = useStationConfig();
+  const zoneIds = Object.keys(zones);
+  const configuredOrder = (config?.view.zone_display_order ?? zoneIds).filter((id) => id !== "CONC");
+  const extras = configuredOrder.filter((id) => BEARINGS[id] === undefined);
+  const t = config?.thresholds;
+  const ringValues = t
+    ? [t.l1_trigger, t.l2_trigger, t.pre_warn_trigger, t.l3_trigger, t.failsafe_trigger]
+    : [5.0, 6.0, 7.0, 7.5, 8.0];
+  const order = compact ? COMPACT_ORDER.filter((id) => zoneIds.includes(id)) : configuredOrder;
   const conc = zones["CONC"];
   const concColor = BORDER_MAP[conc?.color ?? "green"];
   const concCritical = conc?.color === "critical";
@@ -59,19 +78,19 @@ export default function StationMap({
     <div style={{ position: "relative", width: "100%" }}>
       <svg viewBox="0 0 560 560" style={{ width: "100%", height: "auto", display: "block" }}>
         {/* Range rings — the threshold ladder */}
-        {DENSITY_THRESHOLDS.map((t) => (
-          <circle key={t.value} cx={CX} cy={CY} r={densityToRadius(t.value)}
+        {ringValues.map((v) => (
+          <circle key={v} cx={CX} cy={CY} r={densityToRadius(v)}
             fill="none" stroke="var(--hair)" strokeWidth={1} />
         ))}
         <circle cx={CX} cy={CY} r={R_MAX} fill="none" stroke="var(--hair)" strokeWidth={1.5} />
 
         {/* Threshold ladder labels, west side */}
-        {!compact && DENSITY_THRESHOLDS.map((t) => {
-          const r = densityToRadius(t.value);
+        {!compact && ringValues.map((v) => {
+          const r = densityToRadius(v);
           return (
-            <text key={t.value} x={CX - r - 6} y={CY + 3} textAnchor="end"
+            <text key={v} x={CX - r - 6} y={CY + 3} textAnchor="end"
               className="scope" fontSize={9} fill="var(--text-faint)" letterSpacing="0.05em">
-              {t.value.toFixed(1)}
+              {v.toFixed(1)}
             </text>
           );
         })}
@@ -94,7 +113,7 @@ export default function StationMap({
 
         {/* Predicted trajectory vectors */}
         {showPredictions && order.map((id) => {
-          const bearing = BEARINGS[id];
+          const bearing = bearingFor(id, extras);
           const pred = predictions?.[id];
           const state = zones[id];
           if (!pred || !state) return null;
@@ -126,7 +145,7 @@ export default function StationMap({
 
         {/* Contacts */}
         {order.map((id) => {
-          const bearing = BEARINGS[id];
+          const bearing = bearingFor(id, extras);
           const state = zones[id];
           const color = BORDER_MAP[state?.color ?? "green"];
           const critical = state?.color === "critical";
@@ -156,7 +175,7 @@ export default function StationMap({
               )}
               <text x={lp.x} y={lp.y - 3} textAnchor={isRight ? "start" : "end"}
                 className="scope" fontSize={compact ? 8 : 9.5} fill="var(--text-dim)" letterSpacing="0.04em">
-                {ZONE_META[id]?.shortLabel ?? id}
+                {config?.zones.find((z) => z.id === id)?.short_label ?? id}
               </text>
               <text x={lp.x} y={lp.y + (compact ? 8 : 10)} textAnchor={isRight ? "start" : "end"}
                 className="scope" fontWeight={700} fontSize={compact ? 10 : 12} fill={color}>

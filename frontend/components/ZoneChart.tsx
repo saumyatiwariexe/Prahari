@@ -1,6 +1,7 @@
 "use client";
 import type { ZoneState } from "@/lib/types";
-import { BORDER_MAP, ZONE_META } from "@/lib/constants";
+import { BORDER_MAP } from "@/lib/constants";
+import { useStationConfig } from "@/lib/config-context";
 
 interface Props {
   zones: Record<string, ZoneState>;
@@ -13,6 +14,7 @@ const STATUS_LABEL: Record<string, string> = {
 };
 
 export default function ZoneChart({ zones, historyMap }: Props) {
+  const { config } = useStationConfig();
   return (
     <div>
       <div className="scope" style={{
@@ -34,7 +36,7 @@ export default function ZoneChart({ zones, historyMap }: Props) {
         return (
           <ZoneRow
             key={zid}
-            label={ZONE_META[zid]?.shortLabel ?? zid}
+            label={config?.zones.find((z) => z.id === zid)?.short_label ?? zid}
             state={state}
             history={historyMap[zid] ?? []}
           />

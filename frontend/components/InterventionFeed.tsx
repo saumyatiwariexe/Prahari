@@ -3,7 +3,8 @@ import { useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { TriangleAlert } from "lucide-react";
 import type { Intervention } from "@/lib/types";
-import { LEVEL_COLORS, ZONE_META } from "@/lib/constants";
+import { LEVEL_COLORS } from "@/lib/constants";
+import { useStationConfig } from "@/lib/config-context";
 
 const LEVEL_TAG: Record<number, string> = {
   1: "L1 AUTO",
@@ -29,6 +30,9 @@ interface Props {
 }
 
 export default function InterventionFeed({ interventions, staged, onConfirm, onCancel }: Props) {
+  const { config } = useStationConfig();
+  const shortLabel = (zoneId: string) =>
+    config?.zones.find((z) => z.id === zoneId)?.short_label ?? zoneId;
   const bottomRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -44,14 +48,14 @@ export default function InterventionFeed({ interventions, staged, onConfirm, onC
       {staged && staged.length > 0 && (
         <div style={{ borderBottom: "1px solid var(--hair-dim)", flexShrink: 0 }}>
           {staged.map(iv => (
-            <StagedCard key={iv.id} iv={iv} onConfirm={onConfirm} onCancel={onCancel} />
+            <StagedCard key={iv.id} iv={iv} shortLabel={shortLabel} onConfirm={onConfirm} onCancel={onCancel} />
           ))}
         </div>
       )}
 
       <div className="flex-1 overflow-y-auto scrollbar-thin" style={{ minHeight: 0 }}>
         <AnimatePresence initial={false}>
-          {interventions.map(iv => <LogRow key={iv.id} iv={iv} />)}
+          {interventions.map(iv => <LogRow key={iv.id} iv={iv} shortLabel={shortLabel} />)}
         </AnimatePresence>
         <div ref={bottomRef} />
         {interventions.length === 0 && (
@@ -64,10 +68,10 @@ export default function InterventionFeed({ interventions, staged, onConfirm, onC
   );
 }
 
-function LogRow({ iv }: { iv: Intervention }) {
+function LogRow({ iv, shortLabel }: { iv: Intervention; shortLabel: (zoneId: string) => string }) {
   const levelColor = LEVEL_COLORS[iv.level];
   const sMeta      = STATUS_META[iv.status] ?? { label: iv.status.toUpperCase(), color: "var(--text-mute)" };
-  const zone       = ZONE_META[iv.zone]?.shortLabel ?? iv.zone;
+  const zone       = shortLabel(iv.zone);
   const isDimmed   = iv.status === "confirmed" || iv.status === "cancelled";
 
   return (
@@ -105,8 +109,9 @@ function LogRow({ iv }: { iv: Intervention }) {
   );
 }
 
-function StagedCard({ iv, onConfirm, onCancel }: {
+function StagedCard({ iv, shortLabel, onConfirm, onCancel }: {
   iv: Intervention;
+  shortLabel: (zoneId: string) => string;
   onConfirm?: (id: string) => void;
   onCancel?: (id: string) => void;
 }) {
@@ -130,7 +135,7 @@ function StagedCard({ iv, onConfirm, onCancel }: {
       <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
         <TriangleAlert size={12} color={color} strokeWidth={1.75} />
         <span style={{ fontSize: 10, fontWeight: 700, color, letterSpacing: "0.1em" }}>
-          {LEVEL_TAG[iv.level]} — {ZONE_META[iv.zone]?.shortLabel ?? iv.zone}
+          {LEVEL_TAG[iv.level]} — {shortLabel(iv.zone)}
         </span>
       </div>
       <div style={{ fontSize: 10, color: "var(--text-dim)", marginBottom: 7, lineHeight: 1.4, paddingLeft: 18 }}>

@@ -3,7 +3,8 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Play, Video, Plane, Wifi, WifiOff, RefreshCw } from "lucide-react";
 import { useLiveData } from "@/lib/websocket";
-import { API_URL, ZONE_META, BORDER_MAP } from "@/lib/constants";
+import { API_URL, BORDER_MAP } from "@/lib/constants";
+import { useStationConfig } from "@/lib/config-context";
 import StationMap from "@/components/StationMap";
 import InterventionFeed from "@/components/InterventionFeed";
 import ZoneChart from "@/components/ZoneChart";
@@ -35,6 +36,7 @@ const DEMO_LEVELS = [
 ];
 
 export default function Home() {
+  const { config } = useStationConfig();
   const { data, connected } = useLiveData();
   const [view, setView]       = useState<View>("dashboard");
   const [historyMap, setHistoryMap] = useState<Record<string, number[]>>({});
@@ -463,7 +465,7 @@ export default function Home() {
                             fontSize: 11,
                           }}>
                             <span style={{ color: "var(--text-mute)", width: 44 }}>
-                              {ZONE_META[z]?.shortLabel}
+                              {config?.zones.find((zc) => zc.id === z)?.short_label}
                             </span>
                             {[pred.t30, pred.t60, pred.t90].map((p, i) => (
                               <span key={i} style={{ color: BORDER_MAP[p.color], width: 58, textAlign: "right" }}>
