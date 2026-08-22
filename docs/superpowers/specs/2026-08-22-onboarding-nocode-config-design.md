@@ -113,7 +113,10 @@ class ZoneConfig(BaseModel):
     label: str
     short_label: str
     category_id: str             # references CategoryConfig.id
-    area_m2: float
+    area_m2: float                     # true physical zone area — scenario/detector density path
+    camera_area_m2: float | None = None  # visible-crop area for the live single-camera pipeline;
+                                          # see §5.2 note — a different physical quantity, not a
+                                          # duplicate of area_m2
     bounds: ZoneBounds | None    # x1,y1,x2,y2 in the calibration frame's pixel space; None until calibrated
 
 class CategoryConfig(BaseModel):
@@ -125,7 +128,6 @@ class ThresholdConfig(BaseModel):
     density_safe: float
     density_warning: float
     density_critical: float
-    density_lethal: float
     l1_trigger: float
     l2_trigger: float
     l3_trigger: float            # predicted-90s threshold
@@ -157,7 +159,11 @@ class StationConfig(BaseModel):
 
 **Validation enforced on `PUT /config`** (rejected with 422 + field-level
 errors otherwise):
-- `density_safe < density_warning < density_critical < density_lethal`.
+- `density_safe < density_warning < density_critical` (mirrors
+  `constants.density_color`'s existing 3-band classification — its fourth
+  constant, `DENSITY_LETHAL`, is defined in `constants.py` today but never
+  read anywhere; it's dropped here rather than carried forward as a
+  threshold field with no behavior behind it).
 - `l1_trigger <= l2_trigger`, `pre_warn_trigger <= failsafe_trigger`
   (mirrors today's fixed ordering — keeps the escalation ladder sane).
 - Every `ZoneConfig.category_id` must reference an existing `CategoryConfig`.
@@ -184,12 +190,29 @@ detector.py`, `vision/tracker.py`, `vision/zone_map.py`, and `vision/
 video_pipeline.py` switch their threshold/zone lookups from
 `constants`/hardcoded-dict imports to `config_store.get()`. `zone_map.py`'s
 `ZONE_BOUNDS_FULL` and `video_pipeline.py`'s `_ACTIVE_ZONES`/
-`_SINGLE_ACTIVE_ZONES` are both replaced by `ZoneConfig.bounds` from the
-same store — this is the fix for the pre-existing duplication noted in §1.
-Until a zone has been calibrated (`bounds is None`), it's simply excluded
-from pixel-to-zone mapping (contributes 0 detections) but still participates
-in the decision engine, config UI, and (in scenario mode, if it happens to
-be one of the scripted NDLS zones) the demo timeline.
+`_SINGLE_ACTIVE_ZONES` pixel rectangles are both replaced by
+`ZoneConfig.bounds` from the same store in Phase 2 — this is the fix for
+the pre-existing geometry duplication noted in §1. Until a zone has been
+calibrated (`bounds is None`), it's simply excluded from pixel-to-zone
+mapping (contributes 0 detections) but still participates in the decision
+engine, config UI, and (in scenario mode, if it happens to be one of the
+scripted NDLS zones) the demo timeline.
+
+**`area_m2` vs. `camera_area_m2` — these do not unify.** `constants.ZONES`
+today holds each zone's true physical area (e.g. `CONC` = 1200 m², the
+whole concourse) and is what the scenario/detector/tracker density path
+uses. `video_pipeline.py`'s `_ACTIVE_ZONES`/`_SINGLE_ACTIVE_ZONES` hold a
+*different* number per zone (e.g. `CONC` = 60 m²) on purpose — it's the
+area visible within that zone's pixel crop of one fixed camera frame, not
+the zone's true size, and it's what keeps live single-camera density
+readings realistic. Collapsing these to one number would either make
+scenario-mode density go to zero (dividing by 1200 in a stock-video crop)
+or make live-video density read as artificially safe (dividing by 1200
+instead of 60). `ZoneConfig.area_m2` (Goal: thresholds/labels editable)
+maps to the first; the live pipeline keeps reading its own
+`camera_area_m2` (Phase 2, populated only once a zone is calibrated for a
+video source — until then the pipeline keeps using its current hardcoded
+values, so live-video mode is visually unchanged by default).
 
 ### 5.3 Generic fallback action text
 `L1_ACTIONS`/`L2_ACTIONS`/`L3_ACTIONS`/`PRE_WARN_ACTIONS`/`SOS_ACTIONS`
