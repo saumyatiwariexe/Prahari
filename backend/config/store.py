@@ -45,7 +45,13 @@ class ConfigStore:
         if self._path.exists():
             return StationConfig.model_validate_json(self._path.read_text())
         self._save(DEFAULT_CONFIG)
-        return DEFAULT_CONFIG
+        # Return a deep copy, not the DEFAULT_CONFIG singleton itself — get()
+        # hands this object out to callers, and update()'s documented pattern
+        # (`cfg = config_store.get(); cfg.thresholds.x = 1; config_store.update(cfg)`)
+        # would otherwise mutate the process-wide DEFAULT_CONFIG in place,
+        # silently corrupting the "restore to NDLS defaults" guarantee that
+        # reset() relies on.
+        return DEFAULT_CONFIG.model_copy(deep=True)
 
     def _save(self, config: StationConfig) -> None:
         self._path.parent.mkdir(parents=True, exist_ok=True)
