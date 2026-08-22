@@ -77,18 +77,20 @@ export default function StationMap({
   return (
     <div style={{ position: "relative", width: "100%" }}>
       <svg viewBox="0 0 560 560" style={{ width: "100%", height: "auto", display: "block" }}>
-        {/* Range rings — the threshold ladder */}
-        {ringValues.map((v) => (
-          <circle key={v} cx={CX} cy={CY} r={densityToRadius(v)}
+        {/* Range rings — the threshold ladder. Keyed by index, not value: two
+            adjacent thresholds (e.g. pre_warn_trigger and l3_trigger) are allowed
+            to be set equal, which would otherwise collide as a React key. */}
+        {ringValues.map((v, i) => (
+          <circle key={i} cx={CX} cy={CY} r={densityToRadius(v)}
             fill="none" stroke="var(--hair)" strokeWidth={1} />
         ))}
         <circle cx={CX} cy={CY} r={R_MAX} fill="none" stroke="var(--hair)" strokeWidth={1.5} />
 
         {/* Threshold ladder labels, west side */}
-        {!compact && ringValues.map((v) => {
+        {!compact && ringValues.map((v, i) => {
           const r = densityToRadius(v);
           return (
-            <text key={v} x={CX - r - 6} y={CY + 3} textAnchor="end"
+            <text key={i} x={CX - r - 6} y={CY + 3} textAnchor="end"
               className="scope" fontSize={9} fill="var(--text-faint)" letterSpacing="0.05em">
               {v.toFixed(1)}
             </text>

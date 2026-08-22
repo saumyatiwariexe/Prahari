@@ -9,7 +9,8 @@ interface Props {
   persons: PersonBbox[];
   zones: Record<string, ZoneState>;
   loading: boolean;
-  source: "platform" | "aerial";
+  /** Display label for the selected camera feed, e.g. "CAM 01". */
+  source: string;
 }
 
 const LERP = 0.42; // per-frame lerp speed — at 60fps, box reaches target in ~5 frames (~80ms)
@@ -167,7 +168,7 @@ export default function VideoTrackingView({ videoSrc, persons, zones, loading, s
             padding: "4px 10px", background: "var(--panel-2)", borderBottom: "1px solid var(--hair-dim)",
             flexShrink: 0,
           }}>
-            RAW CCTV — {source === "aerial" ? "AERIAL VIEW" : "PLATFORM CAM"}
+            RAW CCTV — {source}
           </div>
           <div style={{ flex: 1, minHeight: 0, position: "relative", background: "var(--bg)" }}>
             <video
@@ -253,7 +254,7 @@ export default function VideoTrackingView({ videoSrc, persons, zones, loading, s
         <StatCell label="PERSONS" value={String(count)} color={color} />
         <StatCell label="DENSITY" value={`${density.toFixed(2)}/m²`} color={color} />
         <StatCell label="STATUS" value={p1?.color?.toUpperCase() ?? "—"} color={color} />
-        <StatCell label="SOURCE" value={source.toUpperCase()} color="var(--text-mute)" />
+        <StatCell label="SOURCE" value={source} color="var(--text-mute)" />
         <StatCell label="MODEL" value="YOLOv8m" color="var(--text-faint)" />
       </div>
     </div>

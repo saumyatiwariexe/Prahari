@@ -48,6 +48,7 @@ export interface PersonBbox {
 
 export interface LiveUpdate {
   elapsed: number;
+  demo_running?: boolean;
   config_version?: number;
   crowdguard: {
     zones: Record<string, ZoneState>;

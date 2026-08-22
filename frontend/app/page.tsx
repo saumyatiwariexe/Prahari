@@ -1,12 +1,15 @@
 "use client";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Play, Video, Plane, Wifi, WifiOff, RefreshCw } from "lucide-react";
+import { Play, Video, Wifi, WifiOff, RefreshCw, Settings } from "lucide-react";
 import { useLiveData } from "@/lib/websocket";
 import { API_URL, BORDER_MAP } from "@/lib/constants";
 import { useStationConfig } from "@/lib/config-context";
 import StationMap from "@/components/StationMap";
+import SettingsPanel from "@/components/SettingsPanel";
+import VideoSourcePicker, { VideoSource } from "@/components/VideoSourcePicker";
 import InterventionFeed from "@/components/InterventionFeed";
+import ThresholdConfirmCard from "@/components/ThresholdConfirmCard";
 import ZoneChart from "@/components/ZoneChart";
 import SplitScreen from "@/components/SplitScreen";
 import PAAnnouncementBanner from "@/components/PAAnnouncementBanner";
@@ -39,19 +42,49 @@ export default function Home() {
   const { config } = useStationConfig();
   const { data, connected } = useLiveData();
   const [view, setView]       = useState<View>("dashboard");
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const [historyMap, setHistoryMap] = useState<Record<string, number[]>>({});
   const [clock, setClock]     = useState("");
-  const [liveMode, setLiveMode] = useState<"scenario" | "platform" | "aerial">("scenario");
-  const [demoStarted, setDemoStarted] = useState(false);
+  const [liveMode, setLiveMode] = useState<"scenario" | "video">("scenario");
+  const [videoSource, setVideoSource] = useState<VideoSource | null>(null);
+  const [pickerOpen, setPickerOpen] = useState(false);
+  // Derived from the backend's own demo_running flag, not local optimistic state —
+  // the scenario clock is a global, server-side singleton (any tab, any earlier
+  // click can have started it), so a freshly-mounted tab has to ask the backend
+  // what's actually running rather than assuming "nobody's pressed start yet".
+  const demoStarted = !!data?.demo_running;
   const [videoLoading, setVideoLoading] = useState(false);
   const lastDataTime = useRef<number>(Date.now());
 
   const [paMessage, setPaMessage]   = useState<{ message: string; zone: string } | null>(null);
   const [phoneNotif, setPhoneNotif] = useState<{ title: string; body: string; level: string } | null>(null);
-  const [sosOverlayDismissed, setSosOverlayDismissed] = useState(false);
+  const [activeSos, setActiveSos]   = useState<Intervention | null>(null);
   const [demoMaxLevel, setDemoMaxLevel] = useState(5);
   const paShownIds    = useRef<Set<string>>(new Set());
   const phoneShownIds = useRef<Set<string>>(new Set());
+  const sosShownIds   = useRef<Set<string>>(new Set());
+  // The intervention list is server-side history that outlives any one page
+  // load — it can already contain a fired SOS (or L1/RPF/L3) from before this
+  // tab connected, whether from an earlier run or just a refresh mid-incident.
+  // Without this, a refresh re-derives "is there a fired SOS" from that stale
+  // history with fresh (empty) local dismissed-state and pops the emergency
+  // overlay right back up. Seed the shown-id sets from whatever already exists
+  // in the very first payload this tab receives, so only interventions that
+  // fire AFTER that point count as new.
+  const baselineSeeded = useRef(false);
+  useEffect(() => {
+    if (baselineSeeded.current) return;
+    const ivs = data?.interventions;
+    if (!ivs) return;
+    baselineSeeded.current = true;
+    for (const iv of ivs) {
+      if (iv.level === 1) paShownIds.current.add(iv.id);
+      if ((iv.level === 2 && iv.action.toLowerCase().includes("rpf")) || iv.level === 3) {
+        phoneShownIds.current.add(iv.id);
+      }
+      if (iv.level === 5 && iv.status === "fired") sosShownIds.current.add(iv.id);
+    }
+  }, [data?.interventions]);
 
   useEffect(() => {
     if (!data?.crowdguard?.zones) return;
@@ -100,6 +133,16 @@ export default function Home() {
   }, [data?.interventions]);
 
   useEffect(() => {
+    const ivs = data?.interventions;
+    if (!ivs) return;
+    const sos = ivs.find(iv => iv.level === 5 && iv.status === "fired" && !sosShownIds.current.has(iv.id));
+    if (sos) {
+      sosShownIds.current.add(sos.id);
+      setActiveSos(sos);
+    }
+  }, [data?.interventions]);
+
+  useEffect(() => {
     const tick = () => setClock(new Date().toLocaleTimeString("en-IN", { hour12: false }));
     tick();
     const id = setInterval(tick, 1000);
@@ -127,25 +170,26 @@ export default function Home() {
     if (liveMode !== "scenario") setView("dashboard");
   }, [liveMode]);
 
-  // Select demo mode without starting — shows START overlay
+  // Select demo mode — shows the START overlay unless the backend already has
+  // a scenario run in progress, in which case that's what should be visible.
   const selectDemo = () => {
     setLiveMode("scenario");
-    setDemoStarted(false);
     setVideoLoading(false);
   };
 
   const _clearVisualState = () => {
-    setSosOverlayDismissed(false);
+    setActiveSos(null);
     setPaMessage(null);
     setPhoneNotif(null);
     paShownIds.current.clear();
     phoneShownIds.current.clear();
+    sosShownIds.current.clear();
   };
 
   // Actually fire the demo scenario
   const launchDemo = (level = demoMaxLevel) =>
     fetch(`${API_URL}/demo/start?max_level=${level}`, { method: "POST" })
-      .then(() => { setDemoStarted(true); _clearVisualState(); })
+      .then(() => { _clearVisualState(); })
       .catch(() => {});
 
   const setLevel = (level: number) => {
@@ -156,14 +200,24 @@ export default function Home() {
     }
   };
 
-  const startLive = (source: "platform" | "aerial") =>
-    fetch(`${API_URL}/live/start?source=${source}`, { method: "POST" })
+  // Full stop — clears the contact log and scenario clock and drops back to
+  // the "START DEMO" screen, rather than set_level's immediate restart.
+  const resetDemo = () =>
+    fetch(`${API_URL}/demo/reset`, { method: "POST" })
+      .then(() => { _clearVisualState(); setHistoryMap({}); })
+      .catch(() => {});
+
+  const startLive = (source: VideoSource) =>
+    fetch(`${API_URL}/live/start?source=${encodeURIComponent(source.key)}`, { method: "POST" })
       .then(() => {
-        setLiveMode(source);
+        setVideoSource(source);
+        setLiveMode("video");
         setVideoLoading(true);
         lastDataTime.current = Date.now();
         paShownIds.current.clear();
         phoneShownIds.current.clear();
+        sosShownIds.current.clear();
+        setActiveSos(null);
       })
       .catch(() => {});
 
@@ -171,6 +225,11 @@ export default function Home() {
     fetch(`${API_URL}/intervention/${id}/confirm`, { method: "POST" }).catch(() => {});
   const cancel  = (id: string) =>
     fetch(`${API_URL}/intervention/${id}/cancel`,  { method: "POST" }).catch(() => {});
+  // Bulk actions for the unified ThresholdConfirmCard — one button resolves
+  // every zone that tripped the same threshold together, instead of forcing
+  // an operator to click through a separate confirm per zone.
+  const confirmAll = (ids: string[]) => ids.forEach(confirm);
+  const cancelAll  = (ids: string[]) => ids.forEach(cancel);
 
   const dismissPA    = useCallback(() => setPaMessage(null),  []);
   const dismissPhone = useCallback(() => setPhoneNotif(null), []);
@@ -180,6 +239,13 @@ export default function Home() {
   const allInterventions: Intervention[] = data?.interventions ?? [];
   const elapsed           = data?.elapsed ?? 0;
   const sc                = SYSTEM_STATUS_META[status];
+  const shortLabel = (zoneId: string) => config?.zones.find((z) => z.id === zoneId)?.short_label ?? zoneId;
+
+  // Grouped by level so simultaneous trips (e.g. 3 platforms all crossing L3
+  // together) collapse into one confirm/cancel decision instead of one per zone.
+  const stagedItems = data?.staged ?? [];
+  const stagedL2 = stagedItems.filter((iv) => iv.level === 2);
+  const stagedL3 = stagedItems.filter((iv) => iv.level === 3);
 
   const gateStates: Record<string, GateState> = { GATE_A: "open", GATE_B: "open", GATE_C: "open" };
   for (const iv of allInterventions) {
@@ -199,9 +265,13 @@ export default function Home() {
   const hasCritical  = Object.values(zones).some(z => z.color === "critical");
 
   const preWarnIv  = allInterventions.find(iv => iv.level === 4 && iv.status === "fired");
-  const sosIv      = allInterventions.find(iv => iv.level === 5 && iv.status === "fired");
-  const preWarnActive = !!preWarnIv && !sosIv;
-  const sosActive     = !!sosIv && !sosOverlayDismissed;
+  // Once any SOS has ever fired this session, the PRE-WARN banner (a lesser,
+  // ongoing "standby" status) stops applying — checked by existence, not by
+  // whether the overlay is currently being shown, so it stays suppressed even
+  // after the SOS overlay has been dismissed/auto-dismissed.
+  const anySosFired    = allInterventions.some(iv => iv.level === 5 && iv.status === "fired");
+  const preWarnActive  = !!preWarnIv && !anySosFired;
+  const sosActive      = activeSos !== null;
 
   return (
     <>
@@ -278,6 +348,17 @@ export default function Home() {
                 );
               })}
             </div>
+
+            <button className="btn-seg" onClick={resetDemo}
+              title="Reset demo — clears the contact log and returns to the start screen"
+              style={{
+                display: "flex", alignItems: "center", gap: 5,
+                height: 22, padding: "0 8px", fontSize: 9,
+                background: "transparent", color: "var(--text-faint)",
+                border: "1px solid var(--hair)", letterSpacing: "0.06em",
+              }}>
+              <RefreshCw size={10} strokeWidth={1.75} /> RESET
+            </button>
           </>
         )}
 
@@ -311,25 +392,33 @@ export default function Home() {
 
         {/* Mode buttons */}
         <div style={{ display: "flex", gap: 4 }}>
-          {([
-            { key: "scenario", label: "DEMO",   Icon: Play,  active: "#29FF8C" },
-            { key: "platform", label: "PLATFM", Icon: Video, active: "#FFB020" },
-            { key: "aerial",   label: "AERIAL", Icon: Plane, active: "#FFB020" },
-          ] as const).map(({ key, label, Icon, active }) => (
-            <button key={key} className="btn-seg"
-              onClick={() => key === "scenario" ? selectDemo() : startLive(key)}
-              style={{
-                display: "flex", alignItems: "center", gap: 6,
-                height: 28, padding: "0 10px", fontSize: 10,
-                background: liveMode === key ? `${active}18` : "transparent",
-                color: liveMode === key ? active : "var(--text-faint)",
-                border: `1px solid ${liveMode === key ? active : "var(--hair)"}`,
-                letterSpacing: "0.08em",
-              }}>
-              <Icon size={11} strokeWidth={1.75} /> {label}
-            </button>
-          ))}
+          <button className="btn-seg" onClick={selectDemo} style={{
+            display: "flex", alignItems: "center", gap: 6,
+            height: 28, padding: "0 10px", fontSize: 10,
+            background: liveMode === "scenario" ? "#29FF8C18" : "transparent",
+            color: liveMode === "scenario" ? "#29FF8C" : "var(--text-faint)",
+            border: `1px solid ${liveMode === "scenario" ? "#29FF8C" : "var(--hair)"}`,
+            letterSpacing: "0.08em",
+          }}>
+            <Play size={11} strokeWidth={1.75} /> DEMO
+          </button>
+          <button className="btn-seg" onClick={() => setPickerOpen(true)} style={{
+            display: "flex", alignItems: "center", gap: 6,
+            height: 28, padding: "0 10px", fontSize: 10,
+            background: liveMode === "video" ? "#FFB02018" : "transparent",
+            color: liveMode === "video" ? "#FFB020" : "var(--text-faint)",
+            border: `1px solid ${liveMode === "video" ? "#FFB020" : "var(--hair)"}`,
+            letterSpacing: "0.08em",
+          }}>
+            <Video size={11} strokeWidth={1.75} /> {liveMode === "video" && videoSource ? videoSource.label : "VIEW"}
+          </button>
         </div>
+
+        <Divider />
+
+        <button onClick={() => setSettingsOpen(true)} title="Station configuration" style={{ background: "none", border: "none", cursor: "pointer" }}>
+          <Settings size={16} color="var(--text-dim)" />
+        </button>
       </header>
 
       {/* ── Body ── */}
@@ -429,11 +518,11 @@ export default function Home() {
                   /* Video mode: full tracking split view */
                   <div className="panel" style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column", overflow: "hidden" }}>
                     <VideoTrackingView
-                      videoSrc={liveMode === "aerial" ? "/videos/aerial.webm" : "/videos/platform.webm"}
+                      videoSrc={videoSource ? `${API_URL}${videoSource.url}` : ""}
                       persons={data?.persons ?? []}
                       zones={zones}
                       loading={videoLoading}
-                      source={liveMode}
+                      source={videoSource?.label ?? ""}
                     />
                   </div>
                 )}
@@ -443,12 +532,7 @@ export default function Home() {
               <div style={{ display: "flex", flexDirection: "column", gap: 6, minHeight: 0 }}>
 
                 <div className="panel" style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column", overflow: "hidden" }}>
-                  <InterventionFeed
-                    interventions={allInterventions}
-                    staged={data?.staged}
-                    onConfirm={confirm}
-                    onCancel={cancel}
-                  />
+                  <InterventionFeed interventions={allInterventions} />
                 </div>
 
                 {data?.crowdguard?.predictions && (
@@ -494,12 +578,23 @@ export default function Home() {
       <PhoneNotification notification={phoneNotif} onDismiss={dismissPhone} />
       <RPFAlert active={rpfActive} boothId="BOOTH-3" distance="120m" />
       <PreWarnBanner active={preWarnActive} intervention={preWarnIv} />
+
+      {/* Unified threshold confirmation — one card per level, listing every
+          zone that tripped it together, instead of a card per zone. */}
+      <div style={{
+        position: "fixed", top: 54, right: 12, zIndex: 60,
+        display: "flex", flexDirection: "column", gap: 8,
+      }}>
+        <ThresholdConfirmCard level={3} items={stagedL3} shortLabel={shortLabel} onConfirmAll={confirmAll} onCancelAll={cancelAll} />
+        <ThresholdConfirmCard level={2} items={stagedL2} shortLabel={shortLabel} onConfirmAll={confirmAll} onCancelAll={cancelAll} />
+      </div>
+
       <EmergencyOverlay
         active={sosActive}
-        sosIntervention={sosIv}
-        onDismiss={() => setSosOverlayDismissed(true)}
+        sosIntervention={activeSos ?? undefined}
+        onDismiss={() => setActiveSos(null)}
       />
-      {/* Floating CCTV widget — only in scenario mode; platform/aerial uses the main split view */}
+      {/* Floating CCTV widget — only in scenario mode; video mode uses the main split view */}
       {liveMode === "scenario" && (
         <VideoPlayer
           critical={hasCritical}
@@ -508,6 +603,17 @@ export default function Home() {
           showTracking={false}
         />
       )}
+      <SettingsPanel
+        open={settingsOpen}
+        onClose={() => setSettingsOpen(false)}
+        demoActive={liveMode === "scenario" && demoStarted}
+        onThresholdsApplied={() => launchDemo(demoMaxLevel)}
+      />
+      <VideoSourcePicker
+        open={pickerOpen}
+        onClose={() => setPickerOpen(false)}
+        onSelect={(source) => { startLive(source); setPickerOpen(false); }}
+      />
     </div>
     </>
   );

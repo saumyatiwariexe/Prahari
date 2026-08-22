@@ -1,7 +1,6 @@
 "use client";
 import { useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { TriangleAlert } from "lucide-react";
 import type { Intervention } from "@/lib/types";
 import { LEVEL_COLORS } from "@/lib/constants";
 import { useStationConfig } from "@/lib/config-context";
@@ -15,50 +14,45 @@ const LEVEL_TAG: Record<number, string> = {
 };
 
 const STATUS_META: Record<string, { label: string; color: string }> = {
-  fired:           { label: "FIRED",    color: "var(--sweep)" },
-  staged:          { label: "PENDING",  color: "var(--amber)" },
-  pending_confirm: { label: "AWAITING", color: "var(--red)" },
-  confirmed:       { label: "EXEC",     color: "var(--text-mute)" },
-  cancelled:       { label: "CANCL",    color: "var(--text-faint)" },
+  fired:     { label: "AUTO-EXEC", color: "var(--sweep)" },
+  confirmed: { label: "ACCEPTED",  color: "var(--text-mute)" },
+  cancelled: { label: "CANCELLED", color: "var(--text-faint)" },
 };
+
+// Staged/pending_confirm interventions are handled by the unified
+// ThresholdConfirmCard pop-ups, not this log — the log only ever shows
+// what was actually done (auto-executed, accepted, or cancelled), so a
+// dozen zones tripping the same threshold at once doesn't flood it with
+// one pending row apiece.
+const LOGGED_STATUSES = new Set(["fired", "confirmed", "cancelled"]);
 
 interface Props {
   interventions: Intervention[];
-  staged?: Intervention[];
-  onConfirm?: (id: string) => void;
-  onCancel?: (id: string) => void;
 }
 
-export default function InterventionFeed({ interventions, staged, onConfirm, onCancel }: Props) {
+export default function InterventionFeed({ interventions }: Props) {
   const { config } = useStationConfig();
   const shortLabel = (zoneId: string) =>
     config?.zones.find((z) => z.id === zoneId)?.short_label ?? zoneId;
+  const logged = interventions.filter((iv) => LOGGED_STATUSES.has(iv.status));
   const bottomRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [interventions.length]);
+  }, [logged.length]);
 
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
       <div className="panel-title" style={{ display: "flex", alignItems: "center", flexShrink: 0 }}>
         <span>CONTACT LOG</span>
-        <span style={{ marginLeft: "auto", color: "var(--text-faint)" }}>{interventions.length} EVT</span>
+        <span style={{ marginLeft: "auto", color: "var(--text-faint)" }}>{logged.length} EVT</span>
       </div>
-
-      {staged && staged.length > 0 && (
-        <div style={{ borderBottom: "1px solid var(--hair-dim)", flexShrink: 0 }}>
-          {staged.map(iv => (
-            <StagedCard key={iv.id} iv={iv} shortLabel={shortLabel} onConfirm={onConfirm} onCancel={onCancel} />
-          ))}
-        </div>
-      )}
 
       <div className="flex-1 overflow-y-auto scrollbar-thin" style={{ minHeight: 0 }}>
         <AnimatePresence initial={false}>
-          {interventions.map(iv => <LogRow key={iv.id} iv={iv} shortLabel={shortLabel} />)}
+          {logged.map(iv => <LogRow key={iv.id} iv={iv} shortLabel={shortLabel} />)}
         </AnimatePresence>
         <div ref={bottomRef} />
-        {interventions.length === 0 && (
+        {logged.length === 0 && (
           <div className="scope" style={{ padding: "16px 12px", fontSize: 10, color: "var(--text-faint)", letterSpacing: "0.1em" }}>
             NO CONTACTS LOGGED
           </div>
@@ -105,72 +99,6 @@ function LogRow({ iv, shortLabel }: { iv: Intervention; shortLabel: (zoneId: str
           RSP {iv.response_time_ms.toFixed(0)}ms
         </div>
       )}
-    </motion.div>
-  );
-}
-
-function StagedCard({ iv, shortLabel, onConfirm, onCancel }: {
-  iv: Intervention;
-  shortLabel: (zoneId: string) => string;
-  onConfirm?: (id: string) => void;
-  onCancel?: (id: string) => void;
-}) {
-  const color = LEVEL_COLORS[iv.level];
-  const isL2  = iv.level === 2;
-  // countdown_remaining counts elapsed pending time (capped at 10s) as an urgency
-  // indicator — L2 always waits for an explicit operator confirm, it never auto-fires.
-  const pct   = isL2 && iv.countdown_remaining != null ? (iv.countdown_remaining / 10) * 100 : 0;
-
-  return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      className="scope"
-      style={{
-        borderBottom: "1px solid var(--hair-dim)",
-        padding: "9px 12px",
-        background: `${color}0C`,
-      }}
-    >
-      <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
-        <TriangleAlert size={12} color={color} strokeWidth={1.75} />
-        <span style={{ fontSize: 10, fontWeight: 700, color, letterSpacing: "0.1em" }}>
-          {LEVEL_TAG[iv.level]} — {shortLabel(iv.zone)}
-        </span>
-      </div>
-      <div style={{ fontSize: 10, color: "var(--text-dim)", marginBottom: 7, lineHeight: 1.4, paddingLeft: 18 }}>
-        {iv.action}
-      </div>
-
-      {isL2 && iv.countdown_remaining != null && (
-        <div style={{ marginBottom: 8 }}>
-          <div style={{ display: "flex", justifyContent: "space-between", fontSize: 9, color: "var(--text-mute)", marginBottom: 3 }}>
-            <span>AWAITING CONFIRM</span>
-            <span style={{ color: "var(--amber)" }}>{iv.countdown_remaining}s</span>
-          </div>
-          <div style={{ height: 3, background: "var(--hair)" }}>
-            <motion.div style={{ height: "100%", background: "var(--amber)", width: `${pct}%` }}
-              transition={{ duration: 0.5 }} />
-          </div>
-        </div>
-      )}
-
-      <div style={{ display: "flex", gap: 6 }}>
-        <button onClick={() => onCancel?.(iv.id)} style={{
-          flex: 1, padding: "6px 0", fontSize: 10, cursor: "pointer",
-          background: "transparent", color: "var(--text-mute)",
-          border: "1px solid var(--hair)", letterSpacing: "0.08em",
-        }}>
-          CANCEL
-        </button>
-        <button onClick={() => onConfirm?.(iv.id)} style={{
-          flex: 1, padding: "6px 0", fontSize: 10, cursor: "pointer",
-          background: `${color}18`, color,
-          border: `1px solid ${color}`, letterSpacing: "0.08em",
-        }}>
-          CONFIRM
-        </button>
-      </div>
     </motion.div>
   );
 }

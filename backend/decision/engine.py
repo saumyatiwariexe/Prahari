@@ -93,9 +93,18 @@ class DecisionEngine:
                 self._staged[key_l2] = {"iv": iv, "staged_at": time.time()}
                 new_interventions.append(iv)
 
-            # L3: stage when predicted density in 90s is lethal
+            # L3: stage when predicted density in 90s is lethal. Also require the
+            # CURRENT density to have already reached PRE-WARN (the rung directly
+            # below L3) — the 90s-ahead forecast is a linear rate projection with a
+            # hard "+5.0" ceiling, so a brief early uptick from a calm baseline can
+            # otherwise satisfy pred_90 before the situation is even at L1 yet,
+            # staging a platform closure before the PA alert / gate throttle that
+            # are supposed to precede it. (Checked against the threshold value, not
+            # "has PRE-WARN fired", so an L3-capped demo run — max_level=3, which
+            # never evaluates the PRE-WARN branch below — can still reach L3.)
             if (self._max_level >= 3
                     and pred_90 >= t.l3_trigger
+                    and density >= t.pre_warn_trigger
                     and key_l3 not in self._fired
                     and key_l3 not in self._staged):
                 if zone_id in L3_ACTIONS:

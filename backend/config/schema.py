@@ -30,6 +30,16 @@ class CategoryConfig(BaseModel):
     color: str
 
 
+# Below this gap, two adjacent thresholds sit close enough together that the
+# scripted density curve — which advances through a fixed density range in a
+# fixed amount of real time, independent of the "speed" multiplier — crosses
+# both in the same broadcast tick (or near enough). Ordering alone doesn't
+# prevent this: it happily accepts e.g. l1=6.2/l2=6.4, which fires L1 and L2
+# for every zone within ~200ms of each other, indistinguishable from the
+# out-of-order "everything at once" bug this same ladder was built to fix.
+THRESHOLD_MIN_GAP = 0.5
+
+
 class ThresholdConfig(BaseModel):
     density_safe: float
     density_warning: float
@@ -43,15 +53,29 @@ class ThresholdConfig(BaseModel):
 
     @model_validator(mode="after")
     def check_ordering(self) -> "ThresholdConfig":
-        if not (self.density_safe < self.density_warning < self.density_critical):
-            raise ValueError(
-                "density thresholds must be strictly increasing: "
-                "density_safe < density_warning < density_critical"
-            )
-        if self.l1_trigger > self.l2_trigger:
-            raise ValueError("l1_trigger must be <= l2_trigger")
-        if self.pre_warn_trigger > self.failsafe_trigger:
-            raise ValueError("pre_warn_trigger must be <= failsafe_trigger")
+        density_chain = [
+            ("density_safe", self.density_safe),
+            ("density_warning", self.density_warning),
+            ("density_critical", self.density_critical),
+        ]
+        trigger_chain = [
+            ("l1_trigger", self.l1_trigger),
+            ("l2_trigger", self.l2_trigger),
+            ("pre_warn_trigger", self.pre_warn_trigger),
+            ("l3_trigger", self.l3_trigger),
+            ("failsafe_trigger", self.failsafe_trigger),
+        ]
+        # Full escalation ladder, not just the endpoints — a gap here (e.g. l2_trigger
+        # above pre_warn_trigger) would let PRE-WARN fire before the L2 stage it's
+        # supposed to follow.
+        for chain in (density_chain, trigger_chain):
+            for (name_a, a), (name_b, b) in zip(chain, chain[1:]):
+                if b - a < THRESHOLD_MIN_GAP:
+                    raise ValueError(
+                        f"{name_b} must be at least {THRESHOLD_MIN_GAP} above {name_a} "
+                        "(thresholds set too close together fire in the same instant, "
+                        "rather than as a comprehensible sequence)"
+                    )
         return self
 
 
