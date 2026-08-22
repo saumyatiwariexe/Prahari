@@ -4,7 +4,7 @@ thresholds, categories, and dashboard views. See
 docs/superpowers/specs/2026-08-22-onboarding-nocode-config-design.md.
 """
 from __future__ import annotations
-from pydantic import BaseModel, model_validator
+from pydantic import BaseModel, Field, model_validator
 
 
 class ZoneBounds(BaseModel):
@@ -15,7 +15,7 @@ class ZoneBounds(BaseModel):
 
 
 class ZoneConfig(BaseModel):
-    id: str
+    id: str = Field(min_length=1)
     label: str
     short_label: str
     category_id: str

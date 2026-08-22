@@ -82,3 +82,9 @@ def test_zone_display_order_must_be_permutation():
     bad["view"] = ViewConfig(zone_display_order=["CONC"])  # missing P1
     with pytest.raises(ValidationError):
         StationConfigInput(**bad)
+
+
+def test_empty_zone_id_rejected():
+    with pytest.raises(ValidationError):
+        ZoneConfig(id="", label="Empty Zone", short_label="EZ",
+                   category_id="platform", area_m2=100.0)
