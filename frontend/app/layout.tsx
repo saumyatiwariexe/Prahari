@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { ConfigProvider } from "@/lib/config-context";
 
 export const metadata: Metadata = {
   title: "Prahari — Crowd Safety Foresight System",
@@ -33,7 +34,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           finish review, the verdict, DESIGN.md, and every shipping raster carrying its
           provenance.
         */}
-        {children}
+        <ConfigProvider>{children}</ConfigProvider>
       </body>
     </html>
   );

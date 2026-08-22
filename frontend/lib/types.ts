@@ -48,6 +48,7 @@ export interface PersonBbox {
 
 export interface LiveUpdate {
   elapsed: number;
+  config_version?: number;
   crowdguard: {
     zones: Record<string, ZoneState>;
     predictions: Record<string, ZonePrediction>;
@@ -63,4 +64,51 @@ export interface LiveUpdate {
   system_status: SystemStatus;
   persons?: PersonBbox[];
   video_ready?: boolean;
+}
+
+export interface ZoneBounds { x1: number; y1: number; x2: number; y2: number; }
+
+export interface ZoneConfig {
+  id: string;
+  label: string;
+  short_label: string;
+  category_id: string;
+  area_m2: number;
+  camera_area_m2: number | null;
+  bounds: ZoneBounds | null;
+}
+
+export interface CategoryConfig { id: string; label: string; color: string; }
+
+export interface ThresholdConfig {
+  density_safe: number;
+  density_warning: number;
+  density_critical: number;
+  l1_trigger: number;
+  l2_trigger: number;
+  l3_trigger: number;
+  pre_warn_trigger: number;
+  failsafe_trigger: number;
+  l2_countdown_seconds: number;
+}
+
+export interface ViewConfig {
+  show_zone_chart: boolean;
+  show_prediction_overlay: boolean;
+  show_flow_vectors: boolean;
+  show_critical_zones_panel: boolean;
+  zone_display_order: string[];
+}
+
+export interface PresetConfig { name: string; view: ViewConfig; }
+
+export interface StationConfig {
+  zones: ZoneConfig[];
+  categories: CategoryConfig[];
+  thresholds: ThresholdConfig;
+  view: ViewConfig;
+  presets: PresetConfig[];
+  video_width: number;
+  video_height: number;
+  version: number;
 }
