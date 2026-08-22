@@ -13,7 +13,7 @@ import time
 import cv2
 import numpy as np
 from ultralytics import YOLO
-from constants import density_color
+from config.store import config_store
 
 try:
     import torch
@@ -55,21 +55,15 @@ _SINGLE_ACTIVE_ZONES = [
 ]
 _SINGLE_PASSIVE_ZONES = ["CONC", "GATE_A", "GATE_B", "GATE_C", "FOB1", "FOB2", "P2", "P3", "P4", "P5", "P6"]
 
-_ZONE_NAMES = {
-    "CONC":   "Main Concourse",
-    "FOB1":   "Foot Over Bridge 1",
-    "FOB2":   "Foot Over Bridge 2",
-    "GATE_A": "Gate A", "GATE_B": "Gate B", "GATE_C": "Gate C",
-    **{f"P{i}": f"Platform {i}" for i in range(1, 7)},
-}
-
 
 def _make_state(zone_id: str, density: float, count: int) -> dict:
+    config = config_store.get()
+    zone = config.zone_by_id(zone_id)
     return {
         "density": round(density, 2),
         "count": count,
-        "color": density_color(density),
-        "name": _ZONE_NAMES.get(zone_id, zone_id),
+        "color": config.density_color(density),
+        "name": zone.label if zone else zone_id,
         "flow_vector": {"dx": 0.0, "dy": 0.0, "magnitude": 0.0},
     }
 
