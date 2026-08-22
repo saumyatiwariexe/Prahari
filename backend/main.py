@@ -21,7 +21,7 @@ from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
-from constants import WEBSOCKET_INTERVAL_MS, ZONES
+from constants import WEBSOCKET_INTERVAL_MS
 from decision.engine import DecisionEngine
 from config.store import config_store
 from config.schema import StationConfigInput
@@ -50,7 +50,7 @@ connections:       list[WebSocket] = []
 
 # Rolling density history for the extrapolator (30 frames ≈ 6 seconds at 5fps)
 _MAX_HIST = 30
-_density_hist: dict[str, list[float]] = {z: [] for z in ZONES}
+_density_hist: dict[str, list[float]] = {}
 
 
 def _update_hist(zone_states: dict):
@@ -249,6 +249,7 @@ async def _broadcast_tick():
 
         payload = {
             "elapsed": round(elapsed, 1),
+            "config_version": config_store.get().version,
             "crowdguard": {
                 "zones": zone_cg,
                 "predictions": predictions,
@@ -283,6 +284,7 @@ async def _broadcast_tick():
 
         payload = {
             "elapsed": round(elapsed, 1),
+            "config_version": config_store.get().version,
             "crowdguard": {
                 "zones": zone_cg,
                 "predictions": predictions,
@@ -314,11 +316,12 @@ async def _broadcast_tick():
 def _system_status(zones: dict) -> str:
     if not zones:
         return "normal"
+    t = config_store.get().thresholds
     max_d = max(z["density"] for z in zones.values())
-    if max_d >= 6.0:
+    if max_d >= t.density_critical:
         return "critical"
-    if max_d >= 5.0:
+    if max_d >= t.l1_trigger:
         return "active"
-    if max_d >= 3.0:
+    if max_d >= t.density_warning:
         return "monitoring"
     return "normal"

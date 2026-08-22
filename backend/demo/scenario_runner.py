@@ -20,7 +20,7 @@ Scenario clock (300s total at speed=2.0 → 2.5 min demo):
   T=300  → End
 """
 import time
-from constants import ZONES, density_color
+from config.store import config_store
 
 # ── CrowdGuard keyframes (Prahari intervenes at T=75, saves lives) ─────────────
 _KF_CROWDGUARD = {
@@ -219,13 +219,20 @@ def _interpolate(kf: dict, t: float) -> dict[str, float]:
 def get_frame(elapsed: float, mode: str = "crowdguard") -> dict:
     kf = _KF_CROWDGUARD if mode == "crowdguard" else _KF_HUMAN
     densities = _interpolate(kf, elapsed)
+    config = config_store.get()
     zones = {}
     for zone_id, density in densities.items():
+        zone = config.zone_by_id(zone_id)
+        # Fallback keeps the scripted NDLS replay running even if this zone
+        # id was deleted from config — see spec §2 non-goals: the scenario
+        # timeline is a fixed historical reenactment, not user-configured.
+        area = zone.area_m2 if zone else 100.0
+        name = zone.label if zone else zone_id
         zones[zone_id] = {
             "density": density,
-            "count": int(density * ZONES[zone_id]["area_m2"]),
-            "color": density_color(density),
-            "name": ZONES[zone_id]["name"],
+            "count": int(density * area),
+            "color": config.density_color(density),
+            "name": name,
             "flow_vector": _flow_for(zone_id, density, elapsed),
         }
     return zones
